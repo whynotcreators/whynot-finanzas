@@ -1,0 +1,101 @@
+-- ============================================================
+-- WHYnot Finanzas — Schema Supabase
+-- Ejecutar en SQL Editor de Supabase
+-- ============================================================
+
+-- Tabla: facturación (ingresos por modelo)
+create table if not exists wf_facturacion (
+  id text primary key,
+  modelo text not null,
+  nicho text default '',
+  monto numeric(12,2) not null,
+  mes text not null,           -- formato YYYY-MM
+  fecha date,
+  tipo text default 'Chatting', -- 'Chatting' | 'Suscripción'
+  notas text default '',
+  created_at timestamptz default now()
+);
+
+-- Tabla: gastos
+create table if not exists wf_gastos (
+  id text primary key,
+  categoria text not null,
+  descripcion text not null,
+  monto numeric(12,2) not null,
+  fecha date not null,
+  area text default '',
+  puesto text default '',
+  team text default '',
+  empleado text default '',
+  software text default '',
+  modelo_asoc text default '',
+  notas text default '',
+  created_at timestamptz default now()
+);
+
+-- Tabla: pagos (registro de pagados/no pagados)
+create table if not exists wf_pagos (
+  id text primary key,           -- formato: "YYYY-MM|tipo|nombre"
+  pagado boolean default false,
+  updated_at timestamptz default now()
+);
+
+-- Tabla: modelos (contratos)
+create table if not exists wf_modelos (
+  id text primary key,
+  nom text not null,
+  nicho text default '',
+  tipo text not null,            -- 'fijo' | 'escalonado'
+  pct numeric(5,2) default 0,   -- para tipo fijo
+  tramos jsonb default '[]',    -- para tipo escalonado
+  team text default '',
+  teams jsonb default '[]',
+  created_at timestamptz default now()
+);
+
+-- Tabla: equipo (empleados)
+create table if not exists wf_equipo (
+  id text primary key,
+  nom text not null,
+  area text default '',
+  puesto text not null,
+  team text default '',
+  sal_tipo text default 'fijo',  -- 'fijo'|'pct-total'|'pct-modelos'|'pct-techo'
+  sal_fijo numeric(12,2) default 0,
+  sal_pct numeric(5,2) default 0,
+  sal_techo numeric(12,2) default 0,
+  sal_mods text default '',
+  created_at timestamptz default now()
+);
+
+-- Tabla: configuración (puestos, teams, nichos, categorías, objetivo)
+create table if not exists wf_config (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz default now()
+);
+
+-- Insertar configuración por defecto
+insert into wf_config (key, value) values
+  ('puestos', '[{"nom":"Team Leader","area":"Chatting"},{"nom":"Chatter","area":"Chatting"},{"nom":"Editor/a","area":"Marketing"},{"nom":"Content Manager","area":"Marketing"},{"nom":"Poster","area":"Marketing"},{"nom":"Asistente","area":"Marketing"}]'),
+  ('teams', '["Team A","Team B"]'),
+  ('nichos', '["MILFs","GymGirl","BabyFace","Teens","BBW"]'),
+  ('cats', '["SALARIO","SUSCRIPCION","MARKETING","OPERATIVO","IMPUESTO","RETIRO DUEÑO","OTRO"]'),
+  ('objetivo', '{"meta":100000,"anio":2026}')
+on conflict (key) do nothing;
+
+-- RLS: habilitar pero permitir acceso autenticado
+alter table wf_facturacion enable row level security;
+alter table wf_gastos enable row level security;
+alter table wf_pagos enable row level security;
+alter table wf_modelos enable row level security;
+alter table wf_equipo enable row level security;
+alter table wf_config enable row level security;
+
+-- Políticas: acceso completo (la app usa anon key, ajustar si se agrega auth)
+create policy "allow_all_facturacion" on wf_facturacion for all using (true) with check (true);
+create policy "allow_all_gastos" on wf_gastos for all using (true) with check (true);
+create policy "allow_all_pagos" on wf_pagos for all using (true) with check (true);
+create policy "allow_all_modelos" on wf_modelos for all using (true) with check (true);
+create policy "allow_all_equipo" on wf_equipo for all using (true) with check (true);
+create policy "allow_all_config" on wf_config for all using (true) with check (true);
