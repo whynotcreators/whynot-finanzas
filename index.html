@@ -212,6 +212,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
   <div class="sbi" onclick="go('facturacion',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,12 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg>Ingresos</div>
   <div class="sbi" onclick="go('gastos',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,4 5,9 9,7 15,13"/><polyline points="11,13 15,13 15,9"/></svg>Gastos</div>
   <div class="sbi" onclick="go('pagos',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="12" height="9" rx="1"/><path d="M5 4V3a1 1 0 0 1 2 0v1M9 4V3a1 1 0 0 1 2 0v1"/><circle cx="8" cy="9" r="1.5"/></svg>Pagos al Equipo</div>
+  <div class="sbi" onclick="go('liquidacion',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="8" r="3"/><circle cx="11" cy="8" r="3"/><path d="M8 5v6M5 8h6"/></svg>Liquidación Socios</div>
   <div class="sbs">Análisis</div>
   <div class="sbi" onclick="go('reportes',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="8" width="3" height="7"/><rect x="6" y="5" width="3" height="10"/><rect x="11" y="2" width="3" height="13"/></svg>Reportes</div>
   <div class="sbi" onclick="go('ia',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M5 8 Q8 4 11 8 Q8 12 5 8"/></svg>IA Financiero</div>
@@ -345,6 +346,13 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div class="fr" id="gas-soft-wrap" style="display:none"><label>Software / Servicio</label><input type="text" id="gas-soft" placeholder="Ej: Notion"></div>
           <div class="fr"><label>Descripción</label><input type="text" id="gas-desc" placeholder="Detalle del gasto"></div>
           <div class="fr"><label>Monto (USD)</label><input type="number" id="gas-monto" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="fr"><label>Pagado por</label>
+            <select id="gas-pagador">
+              <option value="Agencia">🏢 Agencia</option>
+              <option value="Agustín">👤 Agustín</option>
+              <option value="Marco">👤 Marco</option>
+            </select>
+          </div>
           <div class="fr"><label>Fecha</label><input type="date" id="gas-fecha"></div>
           <div class="fr"><label>Modelo asociado</label><select id="gas-mod-asoc"><option value="">— Sin asociar —</option></select></div>
           <div class="fr"><label>Notas</label><input type="text" id="gas-notas" placeholder="Opcional"></div>
@@ -362,7 +370,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
             <input type="month" class="finp" id="gas-fmes" onchange="renderGas()">
           </div>
         </div>
-        <table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Detalle</th><th>Modelo</th><th>Monto</th><th></th></tr></thead>
+        <table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Detalle</th><th>Pagador</th><th>Modelo</th><th>Monto</th><th></th></tr></thead>
         <tbody id="gas-tb"></tbody></table>
       </div>
     </div>
@@ -472,6 +480,88 @@ tbody td.b{color:var(--tx);font-weight:500;}
         <div style="display:flex;flex-direction:column;gap:10px;overflow:hidden">
           <div class="sec"><div class="sh"><span class="st">Snapshot</span></div><div class="sb2" id="ai-snap" style="font-size:11px;line-height:1.9;color:var(--t2)"></div></div>
           <div class="sec" style="flex:1;overflow:hidden"><div class="sh"><span class="st">Alertas</span></div><div class="sb2" id="ai-alr" style="overflow-y:auto"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LIQUIDACIÓN SOCIOS ══ -->
+    <div id="pg-liquidacion" class="pg">
+      <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div><h1>Liquidación de Socios</h1><p>Distribución de ganancias y balances entre Agustín y Marco</p></div>
+        <div class="flt" style="margin-top:4px">
+          <input type="month" class="finp" id="liq-mes" onchange="rLiq()" style="font-size:11px">
+          <button class="btn bg bs" onclick="rLiq()">Calcular</button>
+        </div>
+      </div>
+
+      <!-- RESUMEN EJECUTIVO -->
+      <div class="kg k4" style="margin-bottom:14px">
+        <div class="kc g"><div class="kl">Ingresos del período</div><div class="kv" id="liq-k-ing">$0</div><div class="kd">facturación total</div></div>
+        <div class="kc r"><div class="kl">Gastos totales</div><div class="kv" id="liq-k-gas">$0</div><div class="kd">todos los egresos</div></div>
+        <div class="kc b"><div class="kl">Ganancia neta</div><div class="kv" id="liq-k-net">$0</div><div class="kd">a distribuir</div></div>
+        <div class="kc y"><div class="kl">A cada socio</div><div class="kv" id="liq-k-cada">$0</div><div class="kd">50% de la ganancia neta</div></div>
+      </div>
+
+      <!-- CARDS DE SOCIOS -->
+      <div class="two" style="margin-bottom:14px">
+        <!-- AGUSTÍN -->
+        <div class="sec">
+          <div class="sh"><span class="st" style="color:var(--bl)">👤 Agustín</span><span class="tag tb" id="liq-ag-tag">—</span></div>
+          <div class="sb2">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div style="background:var(--s1);border-radius:4px;padding:10px">
+                <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Pagó en gastos</div>
+                <div style="font-size:16px;font-weight:700;color:var(--re)" id="liq-ag-pago">$0</div>
+              </div>
+              <div style="background:var(--s1);border-radius:4px;padding:10px">
+                <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Le corresponde pagar</div>
+                <div style="font-size:16px;font-weight:700;color:var(--ye)" id="liq-ag-debe">$0</div>
+              </div>
+            </div>
+            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px">
+              <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta a recibir</div>
+              <div style="font-size:20px;font-weight:700;color:var(--gr)" id="liq-ag-ganancia">$0</div>
+            </div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Gastos que pagó</div>
+            <div id="liq-ag-lista" style="font-size:10px;color:var(--t2);max-height:150px;overflow-y:auto"></div>
+          </div>
+        </div>
+        <!-- MARCO -->
+        <div class="sec">
+          <div class="sh"><span class="st" style="color:var(--pu)">👤 Marco</span><span class="tag tp" id="liq-ma-tag">—</span></div>
+          <div class="sb2">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div style="background:var(--s1);border-radius:4px;padding:10px">
+                <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Pagó en gastos</div>
+                <div style="font-size:16px;font-weight:700;color:var(--re)" id="liq-ma-pago">$0</div>
+              </div>
+              <div style="background:var(--s1);border-radius:4px;padding:10px">
+                <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Le corresponde pagar</div>
+                <div style="font-size:16px;font-weight:700;color:var(--ye)" id="liq-ma-debe">$0</div>
+              </div>
+            </div>
+            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px">
+              <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta a recibir</div>
+              <div style="font-size:20px;font-weight:700;color:var(--gr)" id="liq-ma-ganancia">$0</div>
+            </div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Gastos que pagó</div>
+            <div id="liq-ma-lista" style="font-size:10px;color:var(--t2);max-height:150px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEUDA ENTRE SOCIOS + WALLET -->
+      <div class="two">
+        <div class="sec">
+          <div class="sh"><span class="st">⚖️ Balance entre socios</span></div>
+          <div class="sb2" id="liq-balance" style="font-size:13px;text-align:center;padding:20px"></div>
+        </div>
+        <div class="sec">
+          <div class="sh"><span class="st">🏢 Wallet de Agencia</span><span class="tag tg" id="liq-wallet-tag">$0</span></div>
+          <div class="sb2">
+            <div style="font-size:10px;color:var(--t3);margin-bottom:8px">Gastos pagados con la wallet de la agencia — se descuentan antes de distribuir.</div>
+            <div id="liq-wallet-lista" style="font-size:10px;color:var(--t2);max-height:180px;overflow-y:auto"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -793,7 +883,7 @@ async function sDB_gas(row){
     id:row.id, categoria:row.categoria, descripcion:row.descripcion, monto:row.monto,
     fecha:row.fecha||today(), area:row.area||'', puesto:row.puesto||'', team:row.team||'',
     empleado:row.empleado||'', software:row.software||'',
-    modelo_asoc:row.modeloAsoc||'', notas:row.notas||''
+    modelo_asoc:row.modeloAsoc||'', pagador:row.pagador||'Agencia', notas:row.notas||''
   }]);
 }
 async function sDB_gas_del(id){
@@ -856,7 +946,7 @@ async function loadFromSupabase(){
     if(fac)DB.fac=fac.map(r=>({id:r.id,modelo:r.modelo,nicho:r.nicho,monto:parseFloat(r.monto),mes:r.mes,fecha:r.fecha,tipo:r.tipo,notas:r.notas}));
 
     // Gastos
-    if(gas)DB.gastos=gas.map(r=>({id:r.id,categoria:r.categoria,descripcion:r.descripcion,monto:parseFloat(r.monto),fecha:r.fecha,area:r.area,puesto:r.puesto,team:r.team,empleado:r.empleado,software:r.software,modeloAsoc:r.modelo_asoc,notas:r.notas}));
+    if(gas)DB.gastos=gas.map(r=>({id:r.id,categoria:r.categoria,descripcion:r.descripcion,monto:parseFloat(r.monto),fecha:r.fecha,area:r.area,puesto:r.puesto,team:r.team,empleado:r.empleado,software:r.software,modeloAsoc:r.modelo_asoc,pagador:r.pagador||'Agencia',notas:r.notas}));
 
     // Pagos
     if(pagos)pagos.forEach(p=>{DB.pagPagos[p.id]=p.pagado;});
@@ -998,8 +1088,8 @@ function calcEmpleado(emp, mes){
 // ═══════════════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════════════
-const pNames={dashboard:'// DASHBOARD',facturacion:'// INGRESOS',gastos:'// GASTOS',pagos:'// PAGOS AL EQUIPO',reportes:'// REPORTES',ia:'// IA FINANCIERO',agente:'// AGENTE CARGA',modelos:'// MODELOS',equipo:'// EQUIPO',config:'// CONFIGURACIÓN'};
-const rFns={dashboard:rDash,facturacion:rFac,gastos:rGas,pagos:rPagos,reportes:rRep,ia:rIA,agente:rAgente,modelos:rModelos,equipo:rEquipo,config:rCfg};
+const pNames={dashboard:'// DASHBOARD',facturacion:'// INGRESOS',gastos:'// GASTOS',pagos:'// PAGOS AL EQUIPO',liquidacion:'// LIQUIDACIÓN SOCIOS',reportes:'// REPORTES',ia:'// IA FINANCIERO',agente:'// AGENTE CARGA',modelos:'// MODELOS',equipo:'// EQUIPO',config:'// CONFIGURACIÓN'};
+const rFns={dashboard:rDash,facturacion:rFac,gastos:rGas,pagos:rPagos,liquidacion:rLiq,reportes:rRep,ia:rIA,agente:rAgente,modelos:rModelos,equipo:rEquipo,config:rCfg};
 function go(id,el){
   document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('on'));
@@ -1273,9 +1363,10 @@ async function addGasto(){
   const area=$('gas-area').value, team=$('gas-team').value;
   const emp=$('gas-emp').value;
   const soft=$('gas-soft').value.trim(), modAsoc=$('gas-mod-asoc').value;
+  const pagador=$('gas-pagador').value||'Agencia';
   if(!desc||!monto){notif('Descripción y monto requeridos','er');return;}
   const puesto=area==='Chatting'?'Chatting':area;
-  const newGas={id:uid(),categoria:cat,descripcion:desc,monto,fecha,puesto,area,team,empleado:emp,software:soft,modeloAsoc:modAsoc,notas:$('gas-notas').value.trim()};
+  const newGas={id:uid(),categoria:cat,descripcion:desc,monto,fecha,puesto,area,team,empleado:emp,software:soft,modeloAsoc:modAsoc,pagador,notas:$('gas-notas').value.trim()};
   DB.gastos.push(newGas);
   await sDB_gas(newGas);
   $('gas-desc').value='';$('gas-monto').value='';$('gas-soft').value='';$('gas-notas').value='';
@@ -1332,16 +1423,18 @@ function rGas(){
         :`${x.puesto||x.area||''}${x.empleado?' → '+x.empleado:''}`)
       :x.categoria==='SUSCRIPCION'?x.software
       :x.empleado||'—';
+    const pagClr={'Agustín':'tb',Marco:'tp',Agencia:'tg'};
     return `<tr>
       <td>${x.fecha}</td>
       <td><span class="tag ${cClr[x.categoria]||'tgr'}">${x.categoria}</span></td>
       <td class="b">${x.descripcion}</td>
       <td style="font-size:10px;color:var(--t2)">${det||'—'}</td>
+      <td><span class="tag ${pagClr[x.pagador]||'tgr'}">${x.pagador||'Agencia'}</span></td>
       <td>${x.modeloAsoc?`<span class="tag tg">${x.modeloAsoc}</span>`:'—'}</td>
       <td style="color:var(--re);font-weight:600">-${fmt(x.monto)}</td>
       <td><button class="btn bd2 bs" onclick="delGas('${x.id}')">×</button></td>
     </tr>`;
-  }).join(''):'<tr><td colspan="7" class="emp">Sin gastos</td></tr>';
+  }).join(''):'<tr><td colspan="8" class="emp">Sin gastos</td></tr>';
 }
 async function delGas(id){DB.gastos=DB.gastos.filter(x=>x.id!==id);await sDB_gas_del(id);rGas();}
 
@@ -1981,6 +2074,91 @@ function updateAgPanel(){
   <div><span style="color:var(--t3)">Categorías: </span>${CATS.map(c=>`<span style="color:var(--t2);font-size:9px;margin-right:4px">${c}</span>`).join('')}</div>`;
 }
 function rAgente(){updateAgPanel();}
+
+// ═══════════════════════════════════════════════════
+// LIQUIDACIÓN DE SOCIOS
+// ═══════════════════════════════════════════════════
+function rLiq(){
+  if(!$('liq-mes').value)$('liq-mes').value=periodo;
+  const mes=$('liq-mes').value||periodo;
+
+  const fac=fpms(DB.fac,mes);
+  const gas=fpm(DB.gastos,mes);
+
+  const totalIng=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  const totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  const neta=totalIng-totalGas;
+  const cadaSocio=neta/2;
+
+  // Clasificar gastos por pagador
+  const gasAgustin=gas.filter(x=>x.pagador==='Agustín');
+  const gasMarco=gas.filter(x=>x.pagador==='Marco');
+  const gasAgencia=gas.filter(x=>!x.pagador||x.pagador==='Agencia');
+
+  const pagadoAgustin=gasAgustin.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  const pagadoMarco=gasMarco.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  const pagadoAgencia=gasAgencia.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+
+  // Gastos que deben repartir 50/50 (los pagados por socios, no por agencia)
+  const gasRepartibles=pagadoAgustin+pagadoMarco;
+  const cadaUnoDebePagar=gasRepartibles/2;
+
+  // Diferencia: positivo = pagó de más (le deben), negativo = pagó de menos (debe)
+  const saldoAgustin=pagadoAgustin-cadaUnoDebePagar;
+  const saldoMarco=pagadoMarco-cadaUnoDebePagar;
+
+  // KPIs
+  $('liq-k-ing').textContent=fmt(totalIng);
+  $('liq-k-gas').textContent=fmt(totalGas);
+  $('liq-k-net').textContent=fmt(neta);
+  $('liq-k-cada').textContent=fmt(cadaSocio);
+
+  // Card Agustín
+  $('liq-ag-pago').textContent=fmt(pagadoAgustin);
+  $('liq-ag-debe').textContent=fmt(cadaUnoDebePagar);
+  $('liq-ag-ganancia').textContent=fmt(cadaSocio);
+  const agTag=saldoAgustin>=0?`✓ Pagó $${Math.abs(saldoAgustin).toFixed(2)} de más`:`Debe $${Math.abs(saldoAgustin).toFixed(2)}`;
+  $('liq-ag-tag').textContent=agTag;
+  $('liq-ag-tag').className='tag '+(saldoAgustin>=0?'tg':'tr2');
+  $('liq-ag-lista').innerHTML=gasAgustin.length?gasAgustin.map(x=>`
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)">
+      <span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span>
+    </div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
+
+  // Card Marco
+  $('liq-ma-pago').textContent=fmt(pagadoMarco);
+  $('liq-ma-debe').textContent=fmt(cadaUnoDebePagar);
+  $('liq-ma-ganancia').textContent=fmt(cadaSocio);
+  const maTag=saldoMarco>=0?`✓ Pagó $${Math.abs(saldoMarco).toFixed(2)} de más`:`Debe $${Math.abs(saldoMarco).toFixed(2)}`;
+  $('liq-ma-tag').textContent=maTag;
+  $('liq-ma-tag').className='tag '+(saldoMarco>=0?'tg':'tr2');
+  $('liq-ma-lista').innerHTML=gasMarco.length?gasMarco.map(x=>`
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)">
+      <span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span>
+    </div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
+
+  // Balance entre socios
+  const bal=$('liq-balance');
+  if(Math.abs(saldoAgustin)<0.01){
+    bal.innerHTML=`<div style="color:var(--gr);font-size:16px;font-weight:700">✓ Están al día</div><div style="color:var(--t3);font-size:11px;margin-top:6px">Ambos pagaron lo mismo</div>`;
+  } else if(saldoAgustin>0){
+    bal.innerHTML=`<div style="color:var(--ye);font-size:13px;margin-bottom:8px">Marco le debe a Agustín:</div>
+      <div style="font-size:28px;font-weight:700;color:var(--gr)">${fmt(Math.abs(saldoAgustin))}</div>
+      <div style="color:var(--t3);font-size:10px;margin-top:6px">Agustín pagó ${fmt(saldoAgustin)} más de lo que le corresponde</div>`;
+  } else {
+    bal.innerHTML=`<div style="color:var(--ye);font-size:13px;margin-bottom:8px">Agustín le debe a Marco:</div>
+      <div style="font-size:28px;font-weight:700;color:var(--gr)">${fmt(Math.abs(saldoMarco))}</div>
+      <div style="color:var(--t3);font-size:10px;margin-top:6px">Marco pagó ${fmt(Math.abs(saldoMarco))} más de lo que le corresponde</div>`;
+  }
+
+  // Wallet agencia
+  $('liq-wallet-tag').textContent=fmt(pagadoAgencia);
+  $('liq-wallet-lista').innerHTML=gasAgencia.length?gasAgencia.map(x=>`
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)">
+      <span style="color:var(--t2)">${x.descripcion}</span>
+      <span style="color:var(--re)">${fmt(x.monto)}</span>
+    </div>`).join(''):'<div style="color:var(--t3)">Sin gastos de agencia este mes</div>';
+}
 
 // ═══════════════════════════════════════════════════
 // INIT + DEMO
