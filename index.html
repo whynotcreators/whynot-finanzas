@@ -199,10 +199,33 @@ tbody td.b{color:var(--tx);font-weight:500;}
 .info-box strong{color:var(--gr);}
 .badge-p{display:inline-block;background:rgba(255,211,42,.15);color:var(--ye);border:1px solid rgba(255,211,42,.3);border-radius:2px;font-size:8px;padding:1px 5px;font-weight:700;}
 .badge-np{display:inline-block;background:var(--s3);color:var(--t3);border-radius:2px;font-size:8px;padding:1px 5px;}
+/* ── LOGIN ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;}
+.login-box{background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:40px 44px;width:340px;text-align:center;}
+.login-logo{font-family:var(--mo);font-size:15px;font-weight:700;color:var(--gr);letter-spacing:.05em;margin-bottom:4px;}
+.login-sub{font-size:10px;color:var(--t3);letter-spacing:.05em;margin-bottom:32px;font-style:italic;}
+.login-box input{width:100%;background:var(--s2);border:1px solid var(--br);border-radius:4px;padding:10px 12px;color:var(--tx);font-family:var(--mo);font-size:12px;outline:none;margin-bottom:10px;box-sizing:border-box;}
+.login-box input:focus{border-color:var(--gr);}
+.login-btn{width:100%;background:var(--gr);color:#000;border:none;border-radius:4px;padding:11px;font-family:var(--mo);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.08em;margin-top:4px;}
+.login-btn:hover{opacity:.9;}
+.login-err{color:var(--re);font-size:10px;margin-top:8px;min-height:14px;font-family:var(--mo);}
 </style>
 </head>
 <body>
-<div id="app">
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Welcome to WHYnot Creators</div>
+    <div class="login-sub">This is your finance site, sir.</div>
+    <input type="text" id="login-user" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    <input type="password" id="login-pass" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">INGRESAR</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
 
 <!-- SIDEBAR -->
 <div id="sb">
@@ -763,6 +786,22 @@ tbody td.b{color:var(--tx);font-weight:500;}
           </div>
         </div>
       </div>
+      <!-- GESTIÓN DE USUARIOS -->
+      <div class="sec" style="margin-bottom:12px">
+        <div class="sh"><span class="st">🔐 Usuarios y Contraseñas</span></div>
+        <div class="sb2">
+          <div style="font-size:10px;color:var(--t3);margin-bottom:12px">Cambiá el usuario o contraseña de cada socio. Los cambios aplican al próximo login.</div>
+          <div id="cfg-users-list" style="display:flex;flex-direction:column;gap:10px"></div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--br)">
+            <div style="font-size:9px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Agregar nuevo usuario</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+              <div class="fr"><label>Usuario</label><input type="text" id="cfg-new-user" class="finp" placeholder="nombre" style="width:130px"></div>
+              <div class="fr"><label>Contraseña</label><input type="password" id="cfg-new-pass" class="finp" placeholder="contraseña" style="width:130px"></div>
+              <button class="btn bp bs" onclick="addCfgUser()">+ Agregar</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="sec">
         <div class="sh"><span class="st">Fórmulas activas</span></div>
         <div class="sb2">
@@ -822,7 +861,75 @@ tbody td.b{color:var(--tx);font-weight:500;}
 
 <script>
 // ═══════════════════════════════════════════════════
-// SUPABASE CONFIG
+// AUTH — Login dinámico desde Supabase
+// ═══════════════════════════════════════════════════
+let USERS = { agustin: 'whynot2026', marco: 'whynot2026' }; // default hasta que cargue Supabase
+
+async function loadUsers(){
+  const res = await sbGet('wf_config', 'key=eq.usuarios');
+  if(res && res[0]) USERS = res[0].value;
+}
+async function saveUsers(){
+  await sCFG('usuarios', USERS);
+}
+
+function doLogin(){
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-err');
+  if(USERS[user] && USERS[user] === pass){
+    sessionStorage.setItem('wn_auth', user);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    init();
+  } else {
+    err.textContent = 'Usuario o contraseña incorrectos';
+    document.getElementById('login-pass').value = '';
+  }
+}
+
+function checkAuth(){
+  const auth = sessionStorage.getItem('wn_auth');
+  if(auth && USERS[auth]){
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    return true;
+  }
+  return false;
+}
+
+// Gestión de usuarios desde Configuración
+function rCfgUsers(){
+  const el = $('cfg-users-list'); if(!el) return;
+  el.innerHTML = Object.entries(USERS).map(([u, p]) => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--br);border-radius:4px;padding:8px 10px">
+      <span style="font-size:11px;color:var(--tx);font-weight:600;min-width:80px">${u}</span>
+      <input type="password" value="${p}" id="cfgu-pass-${u}" class="finp" style="width:150px;font-size:11px" placeholder="Nueva contraseña">
+      <button class="btn bp bs" onclick="updateCfgUser('${u}')">Guardar</button>
+      <button class="btn bd2 bs" onclick="delCfgUser('${u}')">× Eliminar</button>
+    </div>`).join('');
+}
+async function updateCfgUser(u){
+  const pass = $(`cfgu-pass-${u}`)?.value.trim();
+  if(!pass){notif('Ingresá una contraseña','er');return;}
+  USERS[u] = pass;
+  await saveUsers(); rCfgUsers(); notif('Contraseña actualizada ✓');
+}
+async function delCfgUser(u){
+  if(Object.keys(USERS).length <= 1){notif('Debe haber al menos un usuario','er');return;}
+  delete USERS[u]; await saveUsers(); rCfgUsers(); notif('Usuario eliminado');
+}
+async function addCfgUser(){
+  const u = $('cfg-new-user').value.trim().toLowerCase();
+  const p = $('cfg-new-pass').value.trim();
+  if(!u||!p){notif('Completá usuario y contraseña','er');return;}
+  if(USERS[u]){notif('El usuario ya existe','er');return;}
+  USERS[u] = p; await saveUsers();
+  $('cfg-new-user').value=''; $('cfg-new-pass').value='';
+  rCfgUsers(); notif('Usuario agregado ✓');
+}
+
+
 // ═══════════════════════════════════════════════════
 const SB_URL = 'https://enbaxtbobyghnzknlepx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuYmF4dGJvYnlnaG56a25sZXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTk3NDAsImV4cCI6MjA5MDQ5NTc0MH0.Bq-UH1sBpRjBRllvmfgSm2CJpmyu_u0WTMl9VMazoC8';
@@ -965,6 +1072,7 @@ async function loadFromSupabase(){
       if(cfgMap.nichos)NICHOS=cfgMap.nichos;
       if(cfgMap.cats)CATS=cfgMap.cats;
       if(cfgMap.objetivo)OBJ=cfgMap.objetivo;
+      if(cfgMap.usuarios)USERS=cfgMap.usuarios;
     }
 
     hideLoader();
@@ -1917,6 +2025,7 @@ function clsEmpMod(){$('emp-modal').classList.remove('on');}
 // ═══════════════════════════════════════════════════
 function rCfg(){
   $('cfg-meta').value=OBJ.meta;$('cfg-anio').value=OBJ.anio;
+  rCfgUsers();
   $('cfg-formulas').innerHTML=EQ.empleados.map(e=>{
     const stDesc={fijo:`Fijo ${fmt(e.salFijo||0)}/mes`,'pct-total':`${e.salPct}% del total facturado`,'pct-modelos':`${e.salPct}% de: ${e.salMods||'todas las modelos'}`,'pct-techo':`${e.salPct}% con techo $${(e.salTecho||0).toLocaleString()} de: ${e.salMods||'facturación total'}`};
     return `<div style="padding:5px 0;border-bottom:1px solid var(--br);display:flex;justify-content:space-between"><span style="color:var(--tx)">${e.nom} <span style="font-size:9px;color:var(--t3)">(${e.puesto})</span></span><span style="font-size:10px;color:var(--t2)">${stDesc[e.salTipo||'fijo']}</span></div>`;
@@ -2185,7 +2294,12 @@ async function init(){
 
   rDash();
 }
-document.addEventListener('DOMContentLoaded',init);
+document.addEventListener('DOMContentLoaded', async () => {
+  // Cargar usuarios desde Supabase antes de mostrar login
+  try { await loadUsers(); } catch(e) { /* usa defaults si falla */ }
+  if(checkAuth()) return;
+  // Mostrar pantalla de login
+});
 </script>
 </body>
 </html>
