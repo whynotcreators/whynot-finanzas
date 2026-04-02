@@ -442,6 +442,11 @@ tbody td.b{color:var(--tx);font-weight:500;}
 .login-btn{width:100%;background:var(--gr);color:#fff;border:none;border-radius:10px;padding:13px;font-family:var(--sa);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.01em;margin-top:4px;transition:opacity .15s;}
 .login-btn:hover{opacity:.9;}
 .login-err{color:var(--re);font-size:11px;margin-top:8px;min-height:16px;font-family:var(--sa);}
+
+/* Horas highlight box */
+.horas-box{background:rgba(46,125,50,.06);border:1px solid rgba(46,125,50,.2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-top:2px;}
+.horas-box .calc-result{font-size:13px;font-weight:700;color:var(--gr);}
+.horas-box .calc-detail{font-size:10px;color:var(--t3);}
 </style>
 </head>
 <body>
@@ -503,7 +508,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <input type="month" class="finp" id="dash-fmes" onchange="rDash()" style="font-size:11px">
           <select class="fsel" id="dash-fnicho" onchange="onDashNicho()" style="font-size:11px"><option value="">Todos los nichos</option></select>
           <select class="fsel" id="dash-fmod" onchange="rDash()" style="font-size:11px"><option value="">Todos los modelos</option></select>
-          <button class="btn bg bs" onclick="clrDashFlt()">✕ Limpiar</button>
+          <button class="btn bg bs" onclick="clrDashFlt()">x Limpiar</button>
         </div>
       </div>
       <div class="kg k4">
@@ -546,7 +551,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div class="fr"><label>Nicho</label><select id="fac-nicho" onchange="onFacNicho()"><option value="">— Seleccionar —</option></select></div>
           <div class="fr"><label>Modelo</label><select id="fac-mod"><option value="">— Primero elegir nicho —</option></select></div>
           <div class="fr"><label>Tipo de ingreso</label>
-            <select id="fac-tipo">
+            <select id="fac-tipo" onchange="onFacTipo()">
               <option value="Suscripción">Suscripción</option>
               <option value="Chatting">Chatting</option>
             </select>
@@ -555,6 +560,28 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div class="fr"><label>Mes</label><input type="month" id="fac-mes"></div>
           <div class="fr"><label>Fecha cobro OF</label><input type="date" id="fac-fecha"></div>
           <div class="fr"><label>Notas</label><input type="text" id="fac-notas" placeholder="Opcional"></div>
+        </div>
+        <!-- CAMPO HORAS — solo visible cuando tipo = Chatting -->
+        <div id="fac-horas-wrap" style="display:none;margin-bottom:12px">
+          <div style="font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);font-weight:600;margin-bottom:6px">Horas trabajadas (Chatting)</div>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <div class="fr" style="max-width:160px">
+              <label>Chatter</label>
+              <select id="fac-chatter"><option value="">— Seleccionar chatter —</option></select>
+            </div>
+            <div class="fr" style="max-width:120px">
+              <label>Horas trabajadas</label>
+              <input type="number" id="fac-horas" placeholder="0" min="0" step="0.5" oninput="calcHoras()">
+            </div>
+            <div id="fac-horas-calc" style="display:none">
+              <div class="horas-box">
+                <div>
+                  <div class="calc-result" id="fac-horas-total">$0.00</div>
+                  <div class="calc-detail" id="fac-horas-det">0 hs × $2/hora</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <button class="btn bp" onclick="addFac()">+ Registrar</button>
       </div>
@@ -610,7 +637,17 @@ tbody td.b{color:var(--tx);font-weight:500;}
             </select>
           </div>
           <div class="fr"><label>Fecha</label><input type="date" id="gas-fecha"></div>
-          <div class="fr"><label>Modelo asociado</label><select id="gas-mod-asoc"><option value="">— Sin asociar —</option></select></div>
+          <!-- MODELO ASOCIADO: primero nicho, luego modelo filtrada -->
+          <div class="fr"><label>Nicho (modelo asoc.)</label>
+            <select id="gas-nicho-asoc" onchange="onGasNichoAsoc()">
+              <option value="">— Sin asociar —</option>
+            </select>
+          </div>
+          <div class="fr"><label>Modelo asociada</label>
+            <select id="gas-mod-asoc">
+              <option value="">— Sin modelo —</option>
+            </select>
+          </div>
           <div class="fr"><label>Notas</label><input type="text" id="gas-notas" placeholder="Opcional"></div>
         </div>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
@@ -668,7 +705,6 @@ tbody td.b{color:var(--tx);font-weight:500;}
         </div>
       </div>
 
-      <!-- TAB EQUIPO (mantengo pag-eq como alias vacío para compatibilidad) -->
       <div id="pag-eq" style="display:none"></div>
 
       <!-- TAB EDITORES / OTROS -->
@@ -749,75 +785,42 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <button class="btn bg bs" onclick="rLiq()">Calcular</button>
         </div>
       </div>
-
-      <!-- RESUMEN EJECUTIVO -->
       <div class="kg k4" style="margin-bottom:14px">
         <div class="kc g"><div class="kl">Ingresos del período</div><div class="kv" id="liq-k-ing">$0</div><div class="kd">facturación total</div></div>
         <div class="kc r"><div class="kl">Gastos totales</div><div class="kv" id="liq-k-gas">$0</div><div class="kd">todos los egresos</div></div>
         <div class="kc b"><div class="kl">Ganancia neta</div><div class="kv" id="liq-k-net">$0</div><div class="kd">a distribuir</div></div>
         <div class="kc n"><div class="kl">A cada socio</div><div class="kv" id="liq-k-cada">$0</div><div class="kd">50% de la ganancia neta</div></div>
       </div>
-
-      <!-- CARDS DE SOCIOS -->
       <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px">
-        <!-- AGUSTÍN -->
         <div style="background:var(--sf);border:1px solid var(--br);border-radius:14px;overflow:hidden;box-shadow:var(--sh);min-width:0;width:100%">
           <div class="sh"><span class="st" style="color:var(--bl)">Agustín</span><span class="tag tb" id="liq-ag-tag">—</span></div>
           <div class="sb2">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-              <div style="background:var(--s1);border-radius:4px;padding:10px">
-                <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Pagó en gastos</div>
-                <div style="font-size:16px;font-weight:700;color:var(--re)" id="liq-ag-pago">$0</div>
-              </div>
-              <div style="background:var(--s1);border-radius:4px;padding:10px">
-                <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Le corresponde pagar</div>
-                <div style="font-size:16px;font-weight:700;color:var(--ye)" id="liq-ag-debe">$0</div>
-              </div>
+              <div style="background:var(--s1);border-radius:4px;padding:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Pagó en gastos</div><div style="font-size:16px;font-weight:700;color:var(--re)" id="liq-ag-pago">$0</div></div>
+              <div style="background:var(--s1);border-radius:4px;padding:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Le corresponde pagar</div><div style="font-size:16px;font-weight:700;color:var(--ye)" id="liq-ag-debe">$0</div></div>
             </div>
-            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px">
-              <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta a recibir</div>
-              <div style="font-size:20px;font-weight:700;color:var(--gr)" id="liq-ag-ganancia">$0</div>
-            </div>
+            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta a recibir</div><div style="font-size:20px;font-weight:700;color:var(--gr)" id="liq-ag-ganancia">$0</div></div>
             <div style="font-size:9px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Gastos que pagó</div>
             <div id="liq-ag-lista" style="font-size:10px;color:var(--t2);max-height:150px;overflow-y:auto"></div>
           </div>
         </div>
-        <!-- MARCO -->
         <div style="background:var(--sf);border:1px solid var(--br);border-radius:14px;overflow:hidden;box-shadow:var(--sh);min-width:0;width:100%">
           <div class="sh"><span class="st" style="color:var(--pu)">Marco</span><span class="tag tp" id="liq-ma-tag">—</span></div>
           <div class="sb2">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-              <div style="background:var(--s1);border-radius:4px;padding:10px">
-                <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Pagó en gastos</div>
-                <div style="font-size:16px;font-weight:700;color:var(--re)" id="liq-ma-pago">$0</div>
-              </div>
-              <div style="background:var(--s1);border-radius:4px;padding:10px">
-                <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Le corresponde pagar</div>
-                <div style="font-size:16px;font-weight:700;color:var(--ye)" id="liq-ma-debe">$0</div>
-              </div>
+              <div style="background:var(--s1);border-radius:4px;padding:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Pagó en gastos</div><div style="font-size:16px;font-weight:700;color:var(--re)" id="liq-ma-pago">$0</div></div>
+              <div style="background:var(--s1);border-radius:4px;padding:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Le corresponde pagar</div><div style="font-size:16px;font-weight:700;color:var(--ye)" id="liq-ma-debe">$0</div></div>
             </div>
-            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px">
-              <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta a recibir</div>
-              <div style="font-size:20px;font-weight:700;color:var(--gr)" id="liq-ma-ganancia">$0</div>
-            </div>
+            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta a recibir</div><div style="font-size:20px;font-weight:700;color:var(--gr)" id="liq-ma-ganancia">$0</div></div>
             <div style="font-size:9px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Gastos que pagó</div>
             <div id="liq-ma-lista" style="font-size:10px;color:var(--t2);max-height:150px;overflow-y:auto"></div>
           </div>
         </div>
       </div>
-
-      <!-- DEUDA ENTRE SOCIOS + WALLET -->
       <div class="two">
-        <div class="sec">
-          <div class="sh"><span class="st">Balance entre socios</span></div>
-          <div class="sb2" id="liq-balance" style="font-size:13px;text-align:center;padding:20px"></div>
-        </div>
-        <div class="sec">
-          <div class="sh"><span class="st">Wallet de Agencia</span><span class="tag tg" id="liq-wallet-tag">$0</span></div>
-          <div class="sb2">
-            <div style="font-size:10px;color:var(--t3);margin-bottom:8px">Gastos pagados con la wallet de la agencia — se descuentan antes de distribuir.</div>
-            <div id="liq-wallet-lista" style="font-size:10px;color:var(--t2);max-height:180px;overflow-y:auto"></div>
-          </div>
+        <div class="sec"><div class="sh"><span class="st">Balance entre socios</span></div><div class="sb2" id="liq-balance" style="font-size:13px;text-align:center;padding:20px"></div></div>
+        <div class="sec"><div class="sh"><span class="st">Wallet de Agencia</span><span class="tag tg" id="liq-wallet-tag">$0</span></div>
+          <div class="sb2"><div style="font-size:10px;color:var(--t3);margin-bottom:8px">Gastos pagados con la wallet de la agencia — se descuentan antes de distribuir.</div><div id="liq-wallet-lista" style="font-size:10px;color:var(--t2);max-height:180px;overflow-y:auto"></div></div>
         </div>
       </div>
     </div>
@@ -826,35 +829,27 @@ tbody td.b{color:var(--tx);font-weight:500;}
     <div id="pg-agente" class="pg">
       <div class="ph"><h1>Agente de Carga</h1><p>Dictale qué cargar — la IA extrae los datos, te muestra el resumen y ejecuta el registro</p></div>
       <div style="display:grid;grid-template-columns:1fr 340px;gap:14px;height:calc(100vh - 185px)">
-
-        <!-- CHAT AGENTE -->
         <div class="sec" style="display:flex;flex-direction:column;overflow:hidden">
-          <div class="sh" style="flex-shrink:0">
-            <span class="st">Chat con Agente</span>
-            <button class="btn bg bs" onclick="clrAgente()">Limpiar</button>
-          </div>
+          <div class="sh" style="flex-shrink:0"><span class="st">Chat con Agente</span><button class="btn bg bs" onclick="clrAgente()">Limpiar</button></div>
           <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:14px;gap:0">
             <div class="ams" id="ag-msgs" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:0">
               <div class="am a">
                 <div class="aav" style="background:rgba(255,211,42,.15);color:var(--ye);border:1px solid rgba(255,211,42,.3)">AG</div>
-                <div class="amb">
-                  Hola! Soy el agente de carga de <strong>WHYnot Creators</strong>.<br><br>
+                <div class="amb">Hola! Soy el agente de carga de <strong>WHYnot Creators</strong>.<br><br>
                   Podés pedirme que registre <strong>ingresos</strong> o <strong>gastos</strong> en lenguaje natural. Por ejemplo:<br>
                   <span style="color:var(--t3);font-size:10px">· "Cargá ingreso de Luna por $4.800, chatting, marzo 2026"<br>
                   · "Luna facturó $3.200 en suscripciones en febrero"<br>
                   · "Registrá sueldo de Carlos $450 para marzo"<br>
                   · "Cargá estos ingresos: Luna $5000, Sol $2800, Nova $1600 — todos chatting, marzo"</span><br><br>
-                  Te voy a confirmar lo que entendí antes de guardar.
-                </div>
+                  Te voy a confirmar lo que entendí antes de guardar.</div>
               </div>
             </div>
-            <!-- PANEL DE CONFIRMACIÓN (oculto hasta que la IA proponga algo) -->
             <div id="ag-confirm-panel" style="display:none;margin:10px 0;background:var(--s2);border:1px solid rgba(255,211,42,.3);border-radius:6px;padding:12px 14px">
               <div style="font-size:9px;color:var(--ye);letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:8px">El agente quiere ejecutar:</div>
               <div id="ag-confirm-list" style="font-size:11px;color:var(--t2);margin-bottom:10px;line-height:1.8"></div>
               <div style="display:flex;gap:8px">
-                <button class="btn bp bs" onclick="agConfirm(true)">✓ Confirmar y cargar</button>
-                <button class="btn bg bs" onclick="agConfirm(false)">✗ Cancelar</button>
+                <button class="btn bp bs" onclick="agConfirm(true)">v Confirmar y cargar</button>
+                <button class="btn bg bs" onclick="agConfirm(false)">x Cancelar</button>
               </div>
             </div>
             <div class="air">
@@ -863,19 +858,9 @@ tbody td.b{color:var(--tx);font-weight:500;}
             </div>
           </div>
         </div>
-
-        <!-- PANEL DERECHO -->
         <div style="display:flex;flex-direction:column;gap:12px;overflow:hidden">
-          <div class="sec">
-            <div class="sh"><span class="st">Registros recientes del agente</span></div>
-            <div class="sb2" id="ag-recents" style="font-size:11px;color:var(--t2);line-height:1.9;overflow-y:auto;max-height:200px">
-              <div style="color:var(--t3)">Sin registros aún...</div>
-            </div>
-          </div>
-          <div class="sec" style="flex:1;overflow:hidden">
-            <div class="sh"><span class="st">Datos disponibles para el agente</span></div>
-            <div class="sb2" style="font-size:10px;color:var(--t2);line-height:1.9;overflow-y:auto" id="ag-ctx-panel"></div>
-          </div>
+          <div class="sec"><div class="sh"><span class="st">Registros recientes del agente</span></div><div class="sb2" id="ag-recents" style="font-size:11px;color:var(--t2);line-height:1.9;overflow-y:auto;max-height:200px"><div style="color:var(--t3)">Sin registros aún...</div></div></div>
+          <div class="sec" style="flex:1;overflow:hidden"><div class="sh"><span class="st">Datos disponibles para el agente</span></div><div class="sb2" style="font-size:10px;color:var(--t2);line-height:1.9;overflow-y:auto" id="ag-ctx-panel"></div></div>
         </div>
       </div>
     </div>
@@ -883,7 +868,6 @@ tbody td.b{color:var(--tx);font-weight:500;}
     <!-- ══ MODELOS ══ -->
     <div id="pg-modelos" class="pg">
       <div class="ph"><h1>Modelos</h1><p>Configurá contratos, nichos y estructuras de pago</p></div>
-      <!-- Gestión de Nichos -->
       <div class="sec" style="margin-bottom:12px">
         <div class="sh"><span class="st">Nichos</span><button class="btn bp bs" onclick="addNicho()">+ Agregar</button></div>
         <div class="sb2">
@@ -894,7 +878,6 @@ tbody td.b{color:var(--tx);font-weight:500;}
           </div>
         </div>
       </div>
-      <!-- Nueva Modelo -->
       <div class="qa">
         <div class="qa-t">+ Nueva Modelo</div>
         <div class="fg f3" style="margin-bottom:9px">
@@ -909,7 +892,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Tramos del escalonado</div>
           <div id="mod-tramos"></div>
           <button class="btn bg bs" onclick="addTrm('mod-tramos')" style="margin-top:4px">+ Agregar tramo</button>
-          <div style="font-size:9px;color:var(--t3);margin-top:5px">💡 Dejá "hasta" en 0 para indicar "en adelante".</div>
+          <div style="font-size:9px;color:var(--t3);margin-top:5px">Dejá "hasta" en 0 para indicar "en adelante".</div>
         </div>
         <div class="fr" style="max-width:260px;margin-bottom:9px"><label>Team asignado</label><select id="mod-teams"><option value="">— Sin team —</option></select></div>
         <button class="btn bp" onclick="addMod()">+ Guardar Modelo</button>
@@ -920,19 +903,12 @@ tbody td.b{color:var(--tx);font-weight:500;}
     <!-- ══ EQUIPO ══ -->
     <div id="pg-equipo" class="pg">
       <div class="ph"><h1>Equipo</h1><p>Gestioná áreas, puestos, teams y empleados</p></div>
-
-      <!-- Gestión de Áreas -->
       <div class="sec" style="margin-bottom:12px">
         <div class="sh"><span class="st">Áreas</span></div>
-        <div class="sb2">
-          <div id="areas-list" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:0px"></div>
-        </div>
+        <div class="sb2"><div id="areas-list" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:0px"></div></div>
       </div>
-
-      <!-- Gestión de Puestos (filtrados por área) -->
       <div class="sec" style="margin-bottom:12px">
-        <div class="sh">
-          <span class="st">Puestos / Roles</span>
+        <div class="sh"><span class="st">Puestos / Roles</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:9px;color:var(--t3)">Filtrar por área:</span>
             <select class="fsel" id="puesto-area-flt" onchange="rPuestos()" style="font-size:11px"></select>
@@ -949,8 +925,6 @@ tbody td.b{color:var(--tx);font-weight:500;}
           </div>
         </div>
       </div>
-
-      <!-- Teams -->
       <div class="sec" style="margin-bottom:12px">
         <div class="sh"><span class="st">Teams de Chatting</span><button class="btn bp bs" onclick="addTeam()">+ Agregar</button></div>
         <div class="sb2">
@@ -961,8 +935,6 @@ tbody td.b{color:var(--tx);font-weight:500;}
           </div>
         </div>
       </div>
-
-      <!-- Empleados -->
       <div class="qa">
         <div class="qa-t">+ Nuevo Empleado</div>
         <div class="fg f3" style="margin-bottom:9px">
@@ -971,30 +943,27 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div class="fr"><label>Puesto</label><select id="emp-puesto" onchange="updEmpPuesto()"><option value="">— Primero elegir área —</option></select></div>
           <div class="fr" id="emp-team-w" style="display:none"><label>Team</label><select id="emp-team"><option value="">— Seleccionar —</option></select></div>
         </div>
-        <!-- Estructura salarial -->
         <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;margin-top:2px">Estructura Salarial</div>
         <div class="fg f3" style="margin-bottom:9px">
           <div class="fr"><label>Tipo de sueldo</label>
             <select id="emp-sal-tipo" onchange="updEmpSal()">
               <option value="fijo">Sueldo fijo mensual</option>
+              <option value="por-hora">Pago por hora</option>
               <option value="pct-total">% del total facturado</option>
               <option value="pct-modelos">% de modelos específicas</option>
               <option value="pct-techo">% con techo máximo</option>
             </select>
           </div>
           <div class="fr" id="emp-sal-fijo-w" style="display:none"><label>Monto fijo (USD/mes)</label><input type="number" id="emp-sal-fijo" placeholder="500" min="0"></div>
+          <div class="fr" id="emp-sal-hora-w" style="display:none"><label>Tarifa por hora (USD)</label><input type="number" id="emp-sal-hora" placeholder="2" min="0" step="0.5"></div>
           <div class="fr" id="emp-sal-pct-w" style="display:none"><label>Porcentaje (%)</label><input type="number" id="emp-sal-pct" placeholder="8" min="0" max="100" step="0.1"></div>
           <div class="fr" id="emp-sal-techo-w" style="display:none"><label>Techo máximo (USD)</label><input type="number" id="emp-sal-techo" placeholder="30000" min="0"></div>
         </div>
         <div class="fr" id="emp-sal-mods-w" style="display:none;max-width:340px;margin-bottom:9px"><label>Modelos específicas</label><select id="emp-sal-mods" multiple style="height:80px;background:var(--s2);border:1px solid var(--b2);border-radius:4px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select><div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias</div></div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px" id="emp-sal-info" style="display:none"></div>
         <button class="btn bp" onclick="addEmp()">+ Guardar Empleado</button>
       </div>
-
-      <!-- Lista empleados con filtros -->
       <div class="sec">
-        <div class="sh">
-          <span class="st">Empleados activos</span>
+        <div class="sh"><span class="st">Empleados activos</span>
           <div class="flt">
             <select class="fsel" id="emp-flt-area" onchange="renderEmpTb()"><option value="">Todas las áreas</option></select>
             <select class="fsel" id="emp-flt-puesto" onchange="renderEmpTb()"><option value="">Todos los puestos</option></select>
@@ -1019,7 +988,6 @@ tbody td.b{color:var(--tx);font-weight:500;}
           </div>
         </div>
       </div>
-      <!-- GESTIÓN DE USUARIOS -->
       <div class="sec" style="margin-bottom:12px">
         <div class="sh"><span class="st">Usuarios y Contraseñas</span></div>
         <div class="sb2">
@@ -1037,9 +1005,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
       </div>
       <div class="sec">
         <div class="sh"><span class="st">Fórmulas activas</span></div>
-        <div class="sb2">
-          <div class="info-box" id="cfg-formulas">Cargando...</div>
-        </div>
+        <div class="sb2"><div class="info-box" id="cfg-formulas">Cargando...</div></div>
       </div>
     </div>
 
@@ -1079,9 +1045,18 @@ tbody td.b{color:var(--tx);font-weight:500;}
       <div class="fr"><label>Puesto</label><select id="ee-puesto" onchange="updEePuesto()"><option value="">—</option></select></div>
       <div class="fr" id="ee-team-w" style="display:none"><label>Team</label><select id="ee-team"><option value="">—</option></select></div>
     </div>
-    <div class="fr" style="margin-bottom:8px"><label>Tipo de sueldo</label><select id="ee-sal-tipo" onchange="updEeSal()"><option value="fijo">Fijo mensual</option><option value="pct-total">% total facturado</option><option value="pct-modelos">% modelos específicas</option><option value="pct-techo">% con techo</option></select></div>
+    <div class="fr" style="margin-bottom:8px"><label>Tipo de sueldo</label>
+      <select id="ee-sal-tipo" onchange="updEeSal()">
+        <option value="fijo">Fijo mensual</option>
+        <option value="por-hora">Por hora</option>
+        <option value="pct-total">% total facturado</option>
+        <option value="pct-modelos">% modelos específicas</option>
+        <option value="pct-techo">% con techo</option>
+      </select>
+    </div>
     <div class="fg f2" style="margin-bottom:8px">
       <div class="fr" id="ee-fijo-w" style="display:none"><label>Fijo (USD)</label><input type="number" id="ee-fijo"></div>
+      <div class="fr" id="ee-hora-w" style="display:none"><label>Tarifa por hora (USD)</label><input type="number" id="ee-hora" placeholder="2"></div>
       <div class="fr" id="ee-pct-w" style="display:none"><label>Porcentaje (%)</label><input type="number" id="ee-pct"></div>
       <div class="fr" id="ee-techo-w" style="display:none"><label>Techo USD</label><input type="number" id="ee-techo"></div>
     </div>
@@ -1094,268 +1069,112 @@ tbody td.b{color:var(--tx);font-weight:500;}
 
 <script>
 // ═══════════════════════════════════════════════════
-// TEMA — Light / Dark toggle
+// TEMA
 // ═══════════════════════════════════════════════════
 function toggleTheme(){
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const newTheme = isDark ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('wn_theme', newTheme);
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const newTheme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',newTheme);
+  localStorage.setItem('wn_theme',newTheme);
   updateThemeUI(newTheme);
-  // re-renderizar gráficos con nuevos colores
-  if(typeof rDash === 'function') try{ rChAnual(); rChDist(); }catch(e){}
+  try{rChAnual();rChDist();}catch(e){}
 }
 function updateThemeUI(theme){
-  const isDark = theme === 'dark';
-  const icon = document.getElementById('theme-icon');
-  const track = document.getElementById('theme-track');
-  if(icon) icon.textContent = isDark ? '☀️' : '🌙';
-  if(track) track.classList.toggle('on', isDark);
+  const isDark=theme==='dark';
+  const icon=document.getElementById('theme-icon'),track=document.getElementById('theme-track');
+  if(icon)icon.textContent=isDark?'☀️':'🌙';
+  if(track)track.classList.toggle('on',isDark);
 }
 function initTheme(){
-  const saved = localStorage.getItem('wn_theme') || 'light';
-  document.documentElement.setAttribute('data-theme', saved);
+  const saved=localStorage.getItem('wn_theme')||'light';
+  document.documentElement.setAttribute('data-theme',saved);
   updateThemeUI(saved);
 }
 
-
-let USERS = { agustin: 'whynot2026', marco: 'whynot2026' }; // default hasta que cargue Supabase
-
-async function loadUsers(){
-  const res = await sbGet('wf_config', 'key=eq.usuarios');
-  if(res && res[0]) USERS = res[0].value;
-}
-async function saveUsers(){
-  await sCFG('usuarios', USERS);
-}
-
+let USERS={agustin:'whynot2026',marco:'whynot2026'};
+async function loadUsers(){const res=await sbGet('wf_config','key=eq.usuarios');if(res&&res[0])USERS=res[0].value;}
+async function saveUsers(){await sCFG('usuarios',USERS);}
 function doLogin(){
-  const user = document.getElementById('login-user').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
-  const err  = document.getElementById('login-err');
-  if(USERS[user] && USERS[user] === pass){
-    sessionStorage.setItem('wn_auth', user);
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    init();
-  } else {
-    err.textContent = 'Usuario o contraseña incorrectos';
-    document.getElementById('login-pass').value = '';
-  }
+  const user=$('login-user').value.trim().toLowerCase(),pass=$('login-pass').value,err=$('login-err');
+  if(USERS[user]&&USERS[user]===pass){sessionStorage.setItem('wn_auth',user);$('login-screen').style.display='none';$('app').style.display='flex';init();}
+  else{err.textContent='Usuario o contraseña incorrectos';$('login-pass').value='';}
 }
-
-function checkAuth(){
-  const auth = sessionStorage.getItem('wn_auth');
-  if(auth && USERS[auth]){
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    return true;
-  }
-  return false;
-}
-
-// Gestión de usuarios desde Configuración
+function checkAuth(){const auth=sessionStorage.getItem('wn_auth');if(auth&&USERS[auth]){$('login-screen').style.display='none';$('app').style.display='flex';return true;}return false;}
 function rCfgUsers(){
-  const el = $('cfg-users-list'); if(!el) return;
-  el.innerHTML = Object.entries(USERS).map(([u, p]) => `
-    <div style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--br);border-radius:4px;padding:8px 10px">
-      <span style="font-size:11px;color:var(--tx);font-weight:600;min-width:80px">${u}</span>
-      <input type="password" value="${p}" id="cfgu-pass-${u}" class="finp" style="width:150px;font-size:11px" placeholder="Nueva contraseña">
-      <button class="btn bp bs" onclick="updateCfgUser('${u}')">Guardar</button>
-      <button class="btn bd2 bs" onclick="delCfgUser('${u}')">× Eliminar</button>
-    </div>`).join('');
+  const el=$('cfg-users-list');if(!el)return;
+  el.innerHTML=Object.entries(USERS).map(([u,p])=>`<div style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--br);border-radius:4px;padding:8px 10px"><span style="font-size:11px;color:var(--tx);font-weight:600;min-width:80px">${u}</span><input type="password" value="${p}" id="cfgu-pass-${u}" class="finp" style="width:150px;font-size:11px" placeholder="Nueva contraseña"><button class="btn bp bs" onclick="updateCfgUser('${u}')">Guardar</button><button class="btn bd2 bs" onclick="delCfgUser('${u}')">x Eliminar</button></div>`).join('');
 }
-async function updateCfgUser(u){
-  const pass = $(`cfgu-pass-${u}`)?.value.trim();
-  if(!pass){notif('Ingresá una contraseña','er');return;}
-  USERS[u] = pass;
-  await saveUsers(); rCfgUsers(); notif('Contraseña actualizada ✓');
-}
-async function delCfgUser(u){
-  if(Object.keys(USERS).length <= 1){notif('Debe haber al menos un usuario','er');return;}
-  delete USERS[u]; await saveUsers(); rCfgUsers(); notif('Usuario eliminado');
-}
-async function addCfgUser(){
-  const u = $('cfg-new-user').value.trim().toLowerCase();
-  const p = $('cfg-new-pass').value.trim();
-  if(!u||!p){notif('Completá usuario y contraseña','er');return;}
-  if(USERS[u]){notif('El usuario ya existe','er');return;}
-  USERS[u] = p; await saveUsers();
-  $('cfg-new-user').value=''; $('cfg-new-pass').value='';
-  rCfgUsers(); notif('Usuario agregado ✓');
-}
-
+async function updateCfgUser(u){const pass=$(`cfgu-pass-${u}`)?.value.trim();if(!pass){notif('Ingresá una contraseña','er');return;}USERS[u]=pass;await saveUsers();rCfgUsers();notif('Contraseña actualizada');}
+async function delCfgUser(u){if(Object.keys(USERS).length<=1){notif('Debe haber al menos un usuario','er');return;}delete USERS[u];await saveUsers();rCfgUsers();notif('Usuario eliminado');}
+async function addCfgUser(){const u=$('cfg-new-user').value.trim().toLowerCase(),p=$('cfg-new-pass').value.trim();if(!u||!p){notif('Completá usuario y contraseña','er');return;}if(USERS[u]){notif('El usuario ya existe','er');return;}USERS[u]=p;await saveUsers();$('cfg-new-user').value='';$('cfg-new-pass').value='';rCfgUsers();notif('Usuario agregado');}
 
 // ═══════════════════════════════════════════════════
-const SB_URL = 'https://enbaxtbobyghnzknlepx.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuYmF4dGJvYnlnaG56a25sZXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTk3NDAsImV4cCI6MjA5MDQ5NTc0MH0.Bq-UH1sBpRjBRllvmfgSm2CJpmyu_u0WTMl9VMazoC8';
-const SB_H = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
-
-async function sb(table, method='GET', body=null, params=''){
+// SUPABASE
+// ═══════════════════════════════════════════════════
+const SB_URL='https://enbaxtbobyghnzknlepx.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuYmF4dGJvYnlnaG56a25sZXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTk3NDAsImV4cCI6MjA5MDQ5NTc0MH0.Bq-UH1sBpRjBRllvmfgSm2CJpmyu_u0WTMl9VMazoC8';
+const SB_H={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+async function sb(table,method='GET',body=null,params=''){
   const url=`${SB_URL}/rest/v1/${table}${params?'?'+params:''}`;
   const opts={method,headers:{...SB_H,'Prefer':'return=representation'}};
   if(body)opts.body=JSON.stringify(body);
   const res=await fetch(url,opts);
   if(!res.ok){const e=await res.text();console.error('SB error',table,method,e);return null;}
-  const txt=await res.text();
-  return txt?JSON.parse(txt):null;
+  const txt=await res.text();return txt?JSON.parse(txt):null;
 }
-const sbGet =(t,p='')=>sb(t,'GET',null,p);
+const sbGet=(t,p='')=>sb(t,'GET',null,p);
 const sbUpsert=(t,d)=>sb(t,'POST',d,'on_conflict=id');
-const sbDel  =(t,p)=>sb(t,'DELETE',null,p);
+const sbDel=(t,p)=>sb(t,'DELETE',null,p);
 const sbPatch=(t,d,p)=>sb(t,'PATCH',d,p);
 
 // ═══════════════════════════════════════════════════
-// STATE — en memoria, sincronizado con Supabase
+// STATE
 // ═══════════════════════════════════════════════════
-let DB   = {fac:[],gastos:[],pagPagos:{}};
-let MODS = [];
-let EQ   = {
-  puestos:[
-    {nom:'Team Leader',area:'Chatting'},{nom:'Chatter',area:'Chatting'},
-    {nom:'Editor/a',area:'Marketing'},{nom:'Content Manager',area:'Marketing'},
-    {nom:'Poster',area:'Marketing'},{nom:'Asistente',area:'Marketing'},
-  ],
-  teams:['Team A','Team B'],
-  empleados:[]
-};
-let NICHOS  = ['MILFs','GymGirl','BabyFace','Teens','BBW'];
-let CATS    = ['SALARIO','SUSCRIPCION','MARKETING','OPERATIVO','IMPUESTO','RETIRO DUEÑO','OTRO'];
-const AREAS = ['Chatting','Marketing'];
-let OBJ     = {meta:100000,anio:2026};
-let periodo = '2026-03';
-let aiHist = [];
-let charts = {};
-let trmCnt = 0;
-let _saving = false;
+let DB={fac:[],gastos:[],pagPagos:{}};
+let MODS=[];
+let EQ={puestos:[{nom:'Team Leader',area:'Chatting'},{nom:'Chatter',area:'Chatting'},{nom:'Editor/a',area:'Marketing'},{nom:'Content Manager',area:'Marketing'},{nom:'Poster',area:'Marketing'},{nom:'Asistente',area:'Marketing'}],teams:['Team A','Team B'],empleados:[]};
+let NICHOS=['MILFs','GymGirl','BabyFace','Teens','BBW'];
+let CATS=['SALARIO','SUSCRIPCION','MARKETING','OPERATIVO','IMPUESTO','RETIRO DUEÑO','OTRO'];
+const AREAS=['Chatting','Marketing'];
+let OBJ={meta:100000,anio:2026};
+let periodo='2026-03';
+let aiHist=[];
+let charts={};
+let trmCnt=0;
 
-// ─── FUNCIONES DE GUARDADO (async, Supabase) ───────
-
-async function sDB_fac(row){
-  // upsert un registro de facturación
-  await sbUpsert('wf_facturacion',[{
-    id:row.id, modelo:row.modelo, nicho:row.nicho||'', monto:row.monto,
-    mes:row.mes, fecha:row.fecha||null, tipo:row.tipo||'Chatting', notas:row.notas||''
-  }]);
-}
-async function sDB_fac_del(id){
-  await sbDel('wf_facturacion',`id=eq.${id}`);
-}
-async function sDB_gas(row){
-  await sbUpsert('wf_gastos',[{
-    id:row.id, categoria:row.categoria, descripcion:row.descripcion, monto:row.monto,
-    fecha:row.fecha||today(), area:row.area||'', puesto:row.puesto||'', team:row.team||'',
-    empleado:row.empleado||'', software:row.software||'',
-    modelo_asoc:row.modeloAsoc||'', pagador:row.pagador||'Agencia', notas:row.notas||''
-  }]);
-}
-async function sDB_gas_del(id){
-  await sbDel('wf_gastos',`id=eq.${id}`);
-}
-async function sDB_pago(key,val){
-  if(val){
-    await sbUpsert('wf_pagos',[{id:key,pagado:val}]);
-  } else {
-    await sbDel('wf_pagos',`id=eq.${encodeURIComponent(key)}`);
-  }
-}
-async function sMD(){
-  // upsert todos los modelos
-  if(!MODS.length)return;
-  const rows=MODS.map(m=>({
-    id:m.id, nom:m.nom, nicho:m.nicho||'', tipo:m.tipo,
-    pct:m.pct||0, tramos:m.tramos||[], team:m.team||'', teams:m.teams||[]
-  }));
-  await sbUpsert('wf_modelos',rows);
-}
-async function sMD_del(id){
-  await sbDel('wf_modelos',`id=eq.${id}`);
-}
-async function sEQ(){
-  if(!EQ.empleados.length)return;
-  const rows=EQ.empleados.map(e=>({
-    id:e.id, nom:e.nom, area:e.area||'', puesto:e.puesto, team:e.team||'',
-    sal_tipo:e.salTipo||'fijo', sal_fijo:e.salFijo||0, sal_pct:e.salPct||0,
-    sal_techo:e.salTecho||0, sal_mods:e.salMods||''
-  }));
-  await sbUpsert('wf_equipo',rows);
-}
-async function sEQ_del(id){
-  await sbDel('wf_equipo',`id=eq.${id}`);
-}
-async function sCFG(key,val){
-  await sbUpsert('wf_config',[{key,value:val}]);
-}
+// ─── GUARDADO ──────────────────────────────────────
+async function sDB_fac(row){await sbUpsert('wf_facturacion',[{id:row.id,modelo:row.modelo,nicho:row.nicho||'',monto:row.monto,mes:row.mes,fecha:row.fecha||null,tipo:row.tipo||'Chatting',notas:row.notas||''}]);}
+async function sDB_fac_del(id){await sbDel('wf_facturacion',`id=eq.${id}`);}
+async function sDB_gas(row){await sbUpsert('wf_gastos',[{id:row.id,categoria:row.categoria,descripcion:row.descripcion,monto:row.monto,fecha:row.fecha||today(),area:row.area||'',puesto:row.puesto||'',team:row.team||'',empleado:row.empleado||'',software:row.software||'',modelo_asoc:row.modeloAsoc||'',pagador:row.pagador||'Agencia',notas:row.notas||''}]);}
+async function sDB_gas_del(id){await sbDel('wf_gastos',`id=eq.${id}`);}
+async function sDB_pago(key,val){if(val){await sbUpsert('wf_pagos',[{id:key,pagado:val}]);}else{await sbDel('wf_pagos',`id=eq.${encodeURIComponent(key)}`);}}
+async function sMD(){if(!MODS.length)return;const rows=MODS.map(m=>({id:m.id,nom:m.nom,nicho:m.nicho||'',tipo:m.tipo,pct:m.pct||0,tramos:m.tramos||[],team:m.team||'',teams:m.teams||[]}));await sbUpsert('wf_modelos',rows);}
+async function sMD_del(id){await sbDel('wf_modelos',`id=eq.${id}`);}
+async function sEQ(){if(!EQ.empleados.length)return;const rows=EQ.empleados.map(e=>({id:e.id,nom:e.nom,area:e.area||'',puesto:e.puesto,team:e.team||'',sal_tipo:e.salTipo||'fijo',sal_fijo:e.salFijo||0,sal_pct:e.salPct||0,sal_techo:e.salTecho||0,sal_mods:e.salMods||'',sal_hora:e.salHora||2}));await sbUpsert('wf_equipo',rows);}
+async function sEQ_del(id){await sbDel('wf_equipo',`id=eq.${id}`);}
+async function sCFG(key,val){await sbUpsert('wf_config',[{key,value:val}]);}
 async function sNI(){await sCFG('nichos',NICHOS);}
 async function sCA(){await sCFG('cats',CATS);}
 async function sOJ(){await sCFG('objetivo',OBJ);}
 async function sEQ_puestos(){await sCFG('puestos',EQ.puestos);}
 async function sEQ_teams(){await sCFG('teams',EQ.teams);}
 
-// ─── CARGA INICIAL DESDE SUPABASE ──────────────────
+// ─── CARGA DESDE SUPABASE ──────────────────────────
 async function loadFromSupabase(){
   showLoader('Conectando con Supabase...');
-  try {
-    const [fac,gas,pagos,mods,equipo,config]=await Promise.all([
-      sbGet('wf_facturacion','order=mes.desc'),
-      sbGet('wf_gastos','order=fecha.desc'),
-      sbGet('wf_pagos'),
-      sbGet('wf_modelos','order=nom.asc'),
-      sbGet('wf_equipo','order=nom.asc'),
-      sbGet('wf_config'),
-    ]);
-
-    // Facturación
+  try{
+    const[fac,gas,pagos,mods,equipo,config]=await Promise.all([sbGet('wf_facturacion','order=mes.desc'),sbGet('wf_gastos','order=fecha.desc'),sbGet('wf_pagos'),sbGet('wf_modelos','order=nom.asc'),sbGet('wf_equipo','order=nom.asc'),sbGet('wf_config')]);
     if(fac)DB.fac=fac.map(r=>({id:r.id,modelo:r.modelo,nicho:r.nicho,monto:parseFloat(r.monto),mes:r.mes,fecha:r.fecha,tipo:r.tipo,notas:r.notas}));
-
-    // Gastos
     if(gas)DB.gastos=gas.map(r=>({id:r.id,categoria:r.categoria,descripcion:r.descripcion,monto:parseFloat(r.monto),fecha:r.fecha,area:r.area,puesto:r.puesto,team:r.team,empleado:r.empleado,software:r.software,modeloAsoc:r.modelo_asoc,pagador:r.pagador||'Agencia',notas:r.notas}));
-
-    // Pagos
     if(pagos)pagos.forEach(p=>{DB.pagPagos[p.id]=p.pagado;});
-
-    // Modelos
     if(mods)MODS=mods.map(r=>({id:r.id,nom:r.nom,nicho:r.nicho,tipo:r.tipo,pct:parseFloat(r.pct||0),tramos:r.tramos||[],team:r.team||'',teams:r.teams||[]}));
-
-    // Equipo
-    if(equipo)EQ.empleados=equipo.map(r=>({id:r.id,nom:r.nom,area:r.area,puesto:r.puesto,team:r.team,salTipo:r.sal_tipo,salFijo:parseFloat(r.sal_fijo),salPct:parseFloat(r.sal_pct),salTecho:parseFloat(r.sal_techo),salMods:r.sal_mods}));
-
-    // Config
-    if(config){
-      const cfgMap={};config.forEach(c=>{cfgMap[c.key]=c.value;});
-      if(cfgMap.puestos)EQ.puestos=cfgMap.puestos;
-      if(cfgMap.teams)EQ.teams=cfgMap.teams;
-      if(cfgMap.nichos)NICHOS=cfgMap.nichos;
-      if(cfgMap.cats)CATS=cfgMap.cats;
-      if(cfgMap.objetivo)OBJ=cfgMap.objetivo;
-      if(cfgMap.usuarios)USERS=cfgMap.usuarios;
-    }
-
-    hideLoader();
-    return true;
-  } catch(e){
-    hideLoader();
-    console.error('Error cargando Supabase:',e);
-    notif('Error conectando con la base de datos','er');
-    return false;
-  }
+    if(equipo)EQ.empleados=equipo.map(r=>({id:r.id,nom:r.nom,area:r.area,puesto:r.puesto,team:r.team,salTipo:r.sal_tipo,salFijo:parseFloat(r.sal_fijo),salPct:parseFloat(r.sal_pct),salTecho:parseFloat(r.sal_techo),salMods:r.sal_mods,salHora:parseFloat(r.sal_hora||2)}));
+    if(config){const cfgMap={};config.forEach(c=>{cfgMap[c.key]=c.value;});if(cfgMap.puestos)EQ.puestos=cfgMap.puestos;if(cfgMap.teams)EQ.teams=cfgMap.teams;if(cfgMap.nichos)NICHOS=cfgMap.nichos;if(cfgMap.cats)CATS=cfgMap.cats;if(cfgMap.objetivo)OBJ=cfgMap.objetivo;if(cfgMap.usuarios)USERS=cfgMap.usuarios;}
+    hideLoader();return true;
+  }catch(e){hideLoader();console.error('Error Supabase:',e);notif('Error conectando con la base de datos','er');return false;}
 }
-
-function showLoader(msg='Cargando...'){
-  let el=$('sb-loader');
-  if(!el){
-    el=document.createElement('div');el.id='sb-loader';
-    el.style.cssText='position:fixed;inset:0;background:rgba(5,5,7,.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:var(--sa)';
-    el.innerHTML=`<div style="width:36px;height:36px;border:2px solid var(--br);border-top-color:var(--gr);border-radius:50%;animation:spin .8s linear infinite"></div><div style="font-size:12px;color:var(--t2)">${msg}</div>`;
-    document.body.appendChild(el);
-    if(!document.querySelector('#spin-style')){const s=document.createElement('style');s.id='spin-style';s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(s);}
-  } else {
-    el.querySelector('div:last-child').textContent=msg;
-    el.style.display='flex';
-  }
-}
+function showLoader(msg='Cargando...'){let el=$('sb-loader');if(!el){el=document.createElement('div');el.id='sb-loader';el.style.cssText='position:fixed;inset:0;background:rgba(245,245,245,.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:var(--sa)';el.innerHTML=`<div style="width:36px;height:36px;border:2px solid var(--br);border-top-color:var(--gr);border-radius:50%;animation:spin .8s linear infinite"></div><div style="font-size:12px;color:var(--t2)">${msg}</div>`;document.body.appendChild(el);if(!document.querySelector('#spin-style')){const s=document.createElement('style');s.id='spin-style';s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(s);}}else{el.querySelector('div:last-child').textContent=msg;el.style.display='flex';}}
 function hideLoader(){const el=$('sb-loader');if(el)el.style.display='none';}
-
 
 // ═══════════════════════════════════════════════════
 // UTILS
@@ -1378,88 +1197,46 @@ function chO(ex={}){
   const isDark=document.documentElement.getAttribute('data-theme')==='dark';
   const textColor=isDark?'#64748b':'#9ca3af';
   const gridColor=isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.05)';
-  return{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{labels:{color:textColor,font:{family:'Inter,system-ui,sans-serif',size:10,weight:'500'},boxWidth:12,boxHeight:2,padding:10,pointStyle:'line',usePointStyle:true}},tooltip:{displayColors:false,backgroundColor:'rgba(255,255,255,0.97)',titleColor:'#1C1C1C',bodyColor:'#616161',borderColor:'#E0E0E0',borderWidth:1,padding:10,bodyFont:{family:'Inter,system-ui,sans-serif',size:11},titleFont:{family:'Inter,system-ui,sans-serif',size:11,weight:'600'},callbacks:{label:ctx=>ctx.dataset.label+': $'+parseFloat(ctx.raw||0).toLocaleString('es-AR',{minimumFractionDigits:2})}},},
-    scales:{x:{ticks:{color:textColor,font:{family:'Inter,system-ui,sans-serif',size:9}},grid:{color:gridColor,drawBorder:false}},
-      y:{ticks:{color:textColor,font:{family:'Inter,system-ui,sans-serif',size:9}},grid:{color:gridColor,drawBorder:false}}}
-  };
+  return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{family:'Inter,system-ui,sans-serif',size:10,weight:'500'},boxWidth:12,boxHeight:2,padding:10,pointStyle:'line',usePointStyle:true}},tooltip:{displayColors:false,backgroundColor:'rgba(255,255,255,0.97)',titleColor:'#1C1C1C',bodyColor:'#616161',borderColor:'#E0E0E0',borderWidth:1,padding:10,bodyFont:{family:'Inter,system-ui,sans-serif',size:11},titleFont:{family:'Inter,system-ui,sans-serif',size:11,weight:'600'},callbacks:{label:ctx=>ctx.dataset.label+': $'+parseFloat(ctx.raw||0).toLocaleString('es-AR',{minimumFractionDigits:2})}}},scales:{x:{ticks:{color:textColor,font:{family:'Inter,system-ui,sans-serif',size:9}},grid:{color:gridColor,drawBorder:false}},y:{ticks:{color:textColor,font:{family:'Inter,system-ui,sans-serif',size:9}},grid:{color:gridColor,drawBorder:false}}}};
 }
 
 // ═══════════════════════════════════════════════════
-// PAGO MODELO — lógica núcleo
+// PAGO MODELO
 // ═══════════════════════════════════════════════════
-function calcModelo(mod, facturado){
-  if(!mod) return {pago:0,pct:0,desc:'Sin contrato',pagaGastos:false};
+function calcModelo(mod,facturado){
+  if(!mod)return{pago:0,pct:0,desc:'Sin contrato',pagaGastos:false};
   let pago=0,pct=0,desc='',pagaGastos=false;
-  if(mod.tipo==='fijo'){
-    pct=parseFloat(mod.pct||0);
-    pago=facturado*pct/100;
-    desc=`${pct}% fijo`;
-    pagaGastos=pct>=50;
-  } else {
-    const ts=mod.tramos||[];
-    let prev=0;
-    pagaGastos=false;
-    for(let i=0;i<ts.length;i++){
-      const t=ts[i];
-      const hasta=parseFloat(t.hasta)||Infinity;
-      const pT=parseFloat(t.pct||0);
-      if(facturado>prev){
-        const base=Math.min(facturado,hasta)-prev;
-        if(base>0){pago+=base*pT/100;pct=pT;}
-      }
-      if(facturado>=prev&&pT>=50) pagaGastos=true;
-      prev=hasta;
-    }
-    desc=`Escalonado — tramo activo: ${pct}%`;
-  }
+  if(mod.tipo==='fijo'){pct=parseFloat(mod.pct||0);pago=facturado*pct/100;desc=`${pct}% fijo`;pagaGastos=pct>=50;}
+  else{const ts=mod.tramos||[];let prev=0;for(let i=0;i<ts.length;i++){const t=ts[i];const hasta=parseFloat(t.hasta)||Infinity;const pT=parseFloat(t.pct||0);if(facturado>prev){const base=Math.min(facturado,hasta)-prev;if(base>0){pago+=base*pT/100;pct=pT;}}if(facturado>=prev&&pT>=50)pagaGastos=true;prev=hasta;}desc=`Escalonado — tramo activo: ${pct}%`;}
   return{pago,pct,desc,pagaGastos};
 }
 
 // ═══════════════════════════════════════════════════
-// PAGO EMPLEADO — lógica núcleo
+// PAGO EMPLEADO — incluye por-hora
 // ═══════════════════════════════════════════════════
-function calcEmpleado(emp, mes){
+function calcEmpleado(emp,mes){
   const facTodo=fpms(DB.fac,mes);
-  // Chatting cobra solo sobre ingresos de tipo Chatting
-  // Marketing y otros cobran sobre el total
-  const esChatting = emp.area==='Chatting';
-  const fac = esChatting ? facTodo.filter(x=>x.tipo==='Chatting') : facTodo;
+  const esChatting=emp.area==='Chatting';
+  const fac=esChatting?facTodo.filter(x=>x.tipo==='Chatting'):facTodo;
   const totalFac=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const tipoLabel = esChatting ? 'chatting' : 'total';
+  const tipoLabel=esChatting?'chatting':'total';
   const st=emp.salTipo||'fijo';
   let total=0,base=0,desc='';
-  if(st==='fijo'){
-    total=parseFloat(emp.salFijo||0);
-    desc=`Fijo: ${fmt(total)}/mes`;
-  } else if(st==='pct-total'){
-    const pct=parseFloat(emp.salPct||0);
-    total=totalFac*pct/100;
-    base=totalFac;
-    desc=`${pct}% de ${fmt(totalFac)} (${tipoLabel})`;
-  } else if(st==='pct-modelos'){
-    const pct=parseFloat(emp.salPct||0);
-    const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
-    const facMods=fac.filter(x=>mods.includes(x.modelo)).reduce((s,x)=>s+parseFloat(x.monto||0),0);
-    total=facMods*pct/100;
-    base=facMods;
-    desc=`${pct}% de ${fmt(facMods)} (${mods.join(', ')})`;
-  } else if(st==='pct-techo'){
-    const pct=parseFloat(emp.salPct||0);
-    const techo=parseFloat(emp.salTecho||Infinity);
-    const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
-    let facBase;
-    if(mods.length>0){
-      facBase=fac.filter(x=>mods.includes(x.modelo)).reduce((s,x)=>s+parseFloat(x.monto||0),0);
-    } else {
-      facBase=totalFac;
-    }
-    const baseEfectiva=Math.min(facBase,techo);
-    total=baseEfectiva*pct/100;
-    base=facBase;
-    desc=`${pct}% de ${fmt(baseEfectiva)}${facBase>techo?` (techo $${techo.toLocaleString()})`:''} `;
-    if(mods.length) desc+=`(${mods.join(', ')})`;
+  if(st==='fijo'){total=parseFloat(emp.salFijo||0);desc=`Fijo: ${fmt(total)}/mes`;}
+  else if(st==='por-hora'){
+    // Para chatters por hora: la cantidad de horas se registra manualmente en cada ingreso.
+    // Aquí mostramos la tarifa; el cálculo real viene de los registros de horas.
+    const tarifa=parseFloat(emp.salHora||2);
+    desc=`Por hora: $${tarifa} USD/hora (horas según registros)`;
+    // Buscamos registros de horas de este chatter en este mes
+    const registrosHoras=fpms(DB.fac,mes).filter(x=>x.chatter===emp.nom&&x.horas>0);
+    const totalHoras=registrosHoras.reduce((s,x)=>s+parseFloat(x.horas||0),0);
+    total=totalHoras*tarifa;
+    if(totalHoras>0)desc=`${totalHoras} hs × $${tarifa}/hora = ${fmt(total)}`;
   }
+  else if(st==='pct-total'){const pct=parseFloat(emp.salPct||0);total=totalFac*pct/100;base=totalFac;desc=`${pct}% de ${fmt(totalFac)} (${tipoLabel})`;}
+  else if(st==='pct-modelos'){const pct=parseFloat(emp.salPct||0);const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);const facMods=fac.filter(x=>mods.includes(x.modelo)).reduce((s,x)=>s+parseFloat(x.monto||0),0);total=facMods*pct/100;base=facMods;desc=`${pct}% de ${fmt(facMods)} (${mods.join(', ')})`;}
+  else if(st==='pct-techo'){const pct=parseFloat(emp.salPct||0);const techo=parseFloat(emp.salTecho||Infinity);const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);let facBase;if(mods.length>0){facBase=fac.filter(x=>mods.includes(x.modelo)).reduce((s,x)=>s+parseFloat(x.monto||0),0);}else{facBase=totalFac;}const baseEfectiva=Math.min(facBase,techo);total=baseEfectiva*pct/100;base=facBase;desc=`${pct}% de ${fmt(baseEfectiva)}${facBase>techo?` (techo $${techo.toLocaleString()})`:''}`;if(mods.length)desc+=` (${mods.join(', ')})`;}
   return{total,base,desc};
 }
 
@@ -1471,10 +1248,8 @@ const rFns={dashboard:rDash,facturacion:rFac,gastos:rGas,pagos:rPagos,liquidacio
 function go(id,el){
   document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('on'));
-  $('pg-'+id).classList.add('on');
-  $('tbt').textContent=pNames[id]||id;
-  if(el)el.classList.add('on');
-  rFns[id]?.();
+  $('pg-'+id).classList.add('on');$('tbt').textContent=pNames[id]||id;
+  if(el)el.classList.add('on');rFns[id]?.();
 }
 function setPer(v){periodo=v;const a=document.querySelector('.pg.on');if(a)rFns[a.id.replace('pg-','')]?.();}
 
@@ -1482,167 +1257,107 @@ function setPer(v){periodo=v;const a=document.querySelector('.pg.on');if(a)rFns[
 // DASHBOARD
 // ═══════════════════════════════════════════════════
 function rDash(){
-  // poblar nichos y modelos en cascada
   const dfn=$('dash-fnicho');
   if(dfn){const cur=dfn.value;dfn.innerHTML='<option value="">Todos los nichos</option>'+NICHOS.map(n=>`<option${n===cur?' selected':''}>${n}</option>`).join('');}
   const fNicho=$('dash-fnicho')?.value||'';
   const dfm=$('dash-fmod');
-  if(dfm){
-    const cur=dfm.value;
-    const modsF=fNicho?MODS.filter(m=>m.nicho===fNicho):MODS;
-    dfm.innerHTML='<option value="">Todos los modelos</option>'+modsF.map(m=>`<option${m.nom===cur?' selected':''}>${m.nom}</option>`).join('');
-    if(cur&&!modsF.find(m=>m.nom===cur))dfm.value='';
-  }
-
-  // leer filtros
+  if(dfm){const cur=dfm.value;const modsF=fNicho?MODS.filter(m=>m.nicho===fNicho):MODS;dfm.innerHTML='<option value="">Todos los modelos</option>'+modsF.map(m=>`<option${m.nom===cur?' selected':''}>${m.nom}</option>`).join('');if(cur&&!modsF.find(m=>m.nom===cur))dfm.value='';}
   const fMes=$('dash-fmes')?.value||'';
   const fMod=$('dash-fmod')?.value||'';
   const mesActivo=fMes||periodo;
-
-  // datos filtrados
-  let fac=fpms(DB.fac,mesActivo);
-  let gas=fpm(DB.gastos,mesActivo);
+  let fac=fpms(DB.fac,mesActivo),gas=fpm(DB.gastos,mesActivo);
   if(fNicho)fac=fac.filter(x=>(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho);
   if(fMod)fac=fac.filter(x=>x.modelo===fMod);
-
-  const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const neta=tF-tG, mar=tF>0?(neta/tF)*100:0;
+  const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  const neta=tF-tG,mar=tF>0?(neta/tF)*100:0;
   const prev=offP(mesActivo,-1);
   const prevFac=fpms(DB.fac,prev).filter(x=>!fMod||x.modelo===fMod);
-  const pF=prevFac.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const pG=fpm(DB.gastos,prev).reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  setKPI('k-fac',tF,'k-fac-d',tF,pF); setKPI('k-gas',tG,'k-gas-d',tG,pG,true);
-  $('k-net').textContent=fmt(neta); $('k-mar').textContent=fmtP(mar);
-
+  const pF=prevFac.reduce((s,x)=>s+parseFloat(x.monto||0),0),pG=fpm(DB.gastos,prev).reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  setKPI('k-fac',tF,'k-fac-d',tF,pF);setKPI('k-gas',tG,'k-gas-d',tG,pG,true);
+  $('k-net').textContent=fmt(neta);$('k-mar').textContent=fmtP(mar);
   const filtroLabel=(fNicho?' · '+fNicho:'')+(fMod?' · '+fMod:'')+(fMes?' · '+getPL(fMes):'');
   $('dash-sub').textContent='Período: '+getPL(mesActivo)+filtroLabel+' · '+fac.length+' registros';
-
   const anio=mesActivo.split('-')[0];
-  const facAAll=Array.from({length:12},(_,i)=>{
-    const mo=`${anio}-${String(i+1).padStart(2,'0')}`;
-    return fpms(DB.fac,mo).filter(x=>(!fNicho||(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho)&&(!fMod||x.modelo===fMod)).reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  });
+  const facAAll=Array.from({length:12},(_,i)=>{const mo=`${anio}-${String(i+1).padStart(2,'0')}`;return fpms(DB.fac,mo).filter(x=>(!fNicho||(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho)&&(!fMod||x.modelo===fMod)).reduce((s,x)=>s+parseFloat(x.monto||0),0);});
   const facA=facAAll.reduce((s,v)=>s+v,0);
-  const meta=OBJ.meta||100000;
-  const pct=Math.min((facA/meta)*100,100);
-  const falta=Math.max(meta-facA,0);
+  const meta=OBJ.meta||100000;const pct=Math.min((facA/meta)*100,100);const falta=Math.max(meta-facA,0);
   const mC=facAAll.filter(v=>v>0).length||1;
   $('obj-inp').value=meta;
   $('obj-lbl').textContent=`${fmt(facA)} acumulado en ${anio} de ${fmt(meta)}${fNicho?' ('+fNicho+')':''}${fMod?' · '+fMod:''}`;
-  $('obj-pct').textContent=fmtP(pct); $('obj-pct-lbl').textContent=fmtP(pct);
+  $('obj-pct').textContent=fmtP(pct);$('obj-pct-lbl').textContent=fmtP(pct);
   $('obj-b').style.width=pct+'%';
   $('obj-b').style.background=pct>=100?'var(--gr)':pct>=60?'linear-gradient(90deg,#ffd32a,#00d68f)':'linear-gradient(90deg,var(--re),var(--ye))';
-  $('obj-falta').textContent=pct>=100?'✦ Meta alcanzada!':`Faltan ${fmt(falta)}`;
+  $('obj-falta').textContent=pct>=100?'Meta alcanzada!':`Faltan ${fmt(falta)}`;
   $('obj-prom').textContent=`Prom. mensual: ${fmt(facA/mC)}`;
-
-  // ratio modelos
-  const modMap={};
-  fac.forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
-  const sortM=Object.entries(modMap).sort((a,b)=>b[1]-a[1]);
-  const maxM=sortM[0]?sortM[0][1]:1;
-  $('dash-mod-ratio').innerHTML=sortM.length?sortM.map(([n,v])=>{
-    const res=calcModelo(getModByNom(n),v);
-    const gEq=gas.filter(x=>x.categoria==='SALARIO').reduce((s,x)=>s+parseFloat(x.monto||0),0);
-    const gCargo=res.pagaGastos?gEq*0.5:0;
-    const totalPago=res.pago+gCargo;
-    return `<div class="bdi"><div class="bdl" style="color:var(--tx)">${n}</div>
-      <div class="bdb"><div class="bdf" style="width:${(v/maxM)*100}%;background:var(--gr)"></div></div>
-      <div style="font-size:9px;min-width:210px;text-align:right;color:var(--t2)">
-        <span style="color:var(--gr)">${fmt(v)}</span> · pago: <span style="color:var(--re)">${fmt(totalPago)}</span> · neto: <span style="color:var(--bl)">${fmt(v-totalPago)}</span>
-      </div></div>`;
-  }).join(''):'<div class="emp">Sin facturación'+(fMod?' de '+fMod:'')+' en este período</div>';
-
-  // costos
-  const catMap={};
-  gas.forEach(x=>{catMap[x.categoria]=(catMap[x.categoria]||0)+parseFloat(x.monto||0);});
-  const sortC=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
-  const maxC=sortC[0]?sortC[0][1]:1;
+  const modMap={};fac.forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
+  const sortM=Object.entries(modMap).sort((a,b)=>b[1]-a[1]);const maxM=sortM[0]?sortM[0][1]:1;
+  $('dash-mod-ratio').innerHTML=sortM.length?sortM.map(([n,v])=>{const res=calcModelo(getModByNom(n),v);const gEq=gas.filter(x=>x.categoria==='SALARIO').reduce((s,x)=>s+parseFloat(x.monto||0),0);const gCargo=res.pagaGastos?gEq*0.5:0;const totalPago=res.pago+gCargo;return`<div class="bdi"><div class="bdl" style="color:var(--tx)">${n}</div><div class="bdb"><div class="bdf" style="width:${(v/maxM)*100}%;background:var(--gr)"></div></div><div style="font-size:9px;min-width:210px;text-align:right;color:var(--t2)"><span style="color:var(--gr)">${fmt(v)}</span> · pago: <span style="color:var(--re)">${fmt(totalPago)}</span> · neto: <span style="color:var(--bl)">${fmt(v-totalPago)}</span></div></div>`;}).join(''):'<div class="emp">Sin facturación en este período</div>';
+  const catMap={};gas.forEach(x=>{catMap[x.categoria]=(catMap[x.categoria]||0)+parseFloat(x.monto||0);});
+  const sortC=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);const maxC=sortC[0]?sortC[0][1]:1;
   const cClr={SALARIO:'var(--re)',SUSCRIPCION:'var(--bl)',MARKETING:'var(--ye)',OPERATIVO:'var(--t2)',IMPUESTO:'var(--pu)',RETIRO:'var(--gr)',OTRO:'var(--t3)'};
   $('dash-costos').innerHTML=sortC.length?sortC.map(([n,v])=>`<div class="bdi"><div class="bdl">${n}</div><div class="bdb"><div class="bdf" style="width:${(v/maxC)*100}%;background:${cClr[n]||'var(--t2)'}"></div></div><div class="bdv" style="color:${cClr[n]||'var(--t2)'}">${fmt(v)}</div></div>`).join(''):'<div class="emp">Sin gastos</div>';
-
-  // ── COMPARACIÓN POR NICHO ──
-  const allFacMes=fpms(DB.fac,mesActivo);
-  const nichoMap={};
-  allFacMes.forEach(x=>{
-    const nicho=getModByNom(x.modelo)?.nicho||x.nicho||'Sin nicho';
-    if(!nichoMap[nicho])nichoMap[nicho]={fac:0,mods:new Set(),pagos:0};
-    nichoMap[nicho].fac+=parseFloat(x.monto||0);
-    nichoMap[nicho].mods.add(x.modelo);
-    const res=calcModelo(getModByNom(x.modelo),parseFloat(x.monto||0));
-    const gEq=gas.filter(g=>g.categoria==='SALARIO').reduce((s,g)=>s+parseFloat(g.monto||0),0);
-    nichoMap[nicho].pagos+=res.pago+(res.pagaGastos?gEq*0.5:0);
-  });
-  const sortN=Object.entries(nichoMap).sort((a,b)=>b[1].fac-a[1].fac);
-  const totalNichos=sortN.reduce((s,[,v])=>s+v.fac,0);
-  const maxN=sortN[0]?sortN[0][1].fac:1;
-  const nClrs=['var(--gr)','var(--bl)','var(--ye)','var(--pu)','var(--re)'];
+  const allFacMes=fpms(DB.fac,mesActivo);const nichoMap={};
+  allFacMes.forEach(x=>{const nicho=getModByNom(x.modelo)?.nicho||x.nicho||'Sin nicho';if(!nichoMap[nicho])nichoMap[nicho]={fac:0,mods:new Set(),pagos:0};nichoMap[nicho].fac+=parseFloat(x.monto||0);nichoMap[nicho].mods.add(x.modelo);const res=calcModelo(getModByNom(x.modelo),parseFloat(x.monto||0));const gEq=gas.filter(g=>g.categoria==='SALARIO').reduce((s,g)=>s+parseFloat(g.monto||0),0);nichoMap[nicho].pagos+=res.pago+(res.pagaGastos?gEq*0.5:0);});
+  const sortN=Object.entries(nichoMap).sort((a,b)=>b[1].fac-a[1].fac);const totalNichos=sortN.reduce((s,[,v])=>s+v.fac,0);const maxN=sortN[0]?sortN[0][1].fac:1;const nClrs=['var(--gr)','var(--bl)','var(--ye)','var(--pu)','var(--re)'];
   if($('dash-nicho-total'))$('dash-nicho-total').textContent='Total: '+fmt(totalNichos);
-  if($('dash-nichos'))$('dash-nichos').innerHTML=sortN.length?sortN.map(([nicho,v],i)=>{
-    const pctN=totalNichos>0?((v.fac/totalNichos)*100).toFixed(1):0;
-    const neto=v.fac-v.pagos;
-    return `<div class="bdi" style="padding:8px 0">
-      <div style="min-width:110px"><div style="font-size:11px;color:var(--tx);font-weight:500">${nicho}</div>
-      <div style="font-size:9px;color:var(--t3)">${v.mods.size} modelo${v.mods.size!==1?'s':''} · ${pctN}%</div></div>
-      <div class="bdb"><div class="bdf" style="width:${(v.fac/maxN)*100}%;background:${nClrs[i%nClrs.length]}"></div></div>
-      <div style="font-size:9px;min-width:240px;text-align:right;color:var(--t2)">
-        <span style="color:${nClrs[i%nClrs.length]};font-weight:600">${fmt(v.fac)}</span>
-        <span style="color:var(--t3);margin:0 4px">·</span>pago: <span style="color:var(--re)">${fmt(v.pagos)}</span>
-        <span style="color:var(--t3);margin:0 4px">·</span>neto: <span style="color:${neto>=0?'var(--bl)':'var(--re)'};font-weight:600">${fmt(neto)}</span>
-      </div></div>`;
-  }).join(''):'<div class="emp">Sin datos</div>';
-
-  rChAnual(fMod,fNicho); rChDist(mesActivo);
+  if($('dash-nichos'))$('dash-nichos').innerHTML=sortN.length?sortN.map(([nicho,v],i)=>{const pctN=totalNichos>0?((v.fac/totalNichos)*100).toFixed(1):0;const neto=v.fac-v.pagos;return`<div class="bdi" style="padding:8px 0"><div style="min-width:110px"><div style="font-size:11px;color:var(--tx);font-weight:500">${nicho}</div><div style="font-size:9px;color:var(--t3)">${v.mods.size} modelo${v.mods.size!==1?'s':''} · ${pctN}%</div></div><div class="bdb"><div class="bdf" style="width:${(v.fac/maxN)*100}%;background:${nClrs[i%nClrs.length]}"></div></div><div style="font-size:9px;min-width:240px;text-align:right;color:var(--t2)"><span style="color:${nClrs[i%nClrs.length]};font-weight:600">${fmt(v.fac)}</span><span style="color:var(--t3);margin:0 4px">·</span>pago: <span style="color:var(--re)">${fmt(v.pagos)}</span><span style="color:var(--t3);margin:0 4px">·</span>neto: <span style="color:${neto>=0?'var(--bl)':'var(--re)'};font-weight:600">${fmt(neto)}</span></div></div>`;}).join(''):'<div class="emp">Sin datos</div>';
+  rChAnual(fMod,fNicho);rChDist(mesActivo);
 }
 function onDashNicho(){const dfm=$('dash-fmod');if(dfm)dfm.value='';rDash();}
-function clrDashFlt(){
-  [$('dash-fmes'),$('dash-fnicho'),$('dash-fmod')].forEach(e=>{if(e)e.value='';});
-  rDash();
-}
-function setKPI(vi,val,di,curr,prev,inv=false){
-  $(vi).textContent=fmt(val);
-  const el=$(di);
-  if(!prev){el.textContent='Sin datos previos';el.className='kd';return;}
-  const p=((curr-prev)/prev)*100;
-  el.textContent=(p>=0?'▲ +':'▼ ')+p.toFixed(1)+'% vs mes anterior';
-  el.className='kd '+((inv?p<=0:p>=0)?'up':'dn');
-}
+function clrDashFlt(){[$('dash-fmes'),$('dash-fnicho'),$('dash-fmod')].forEach(e=>{if(e)e.value='';});rDash();}
+function setKPI(vi,val,di,curr,prev,inv=false){$(vi).textContent=fmt(val);const el=$(di);if(!prev){el.textContent='Sin datos previos';el.className='kd';return;}const p=((curr-prev)/prev)*100;el.textContent=(p>=0?'+ ':'- ')+Math.abs(p).toFixed(1)+'% vs mes anterior';el.className='kd '+((inv?p<=0:p>=0)?'up':'dn');}
 function rChAnual(fMod='',fNicho=''){
-  const mesActivo=$('dash-fmes')?.value||periodo;
-  const anio=mesActivo.split('-')[0],labels=[],fd=[],gd=[];
-  for(let i=1;i<=12;i++){
-    const mo=`${anio}-${String(i).padStart(2,'0')}`;
-    labels.push(['','ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][i]);
-    let facMo=fpms(DB.fac,mo);
-    if(fNicho)facMo=facMo.filter(x=>(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho);
-    if(fMod)facMo=facMo.filter(x=>x.modelo===fMod);
-    fd.push(facMo.reduce((s,x)=>s+parseFloat(x.monto||0),0));
-    gd.push(fpm(DB.gastos,mo).reduce((s,x)=>s+parseFloat(x.monto||0),0));
-  }
-  dc('ch-anual');
-  const lbl=fMod?`${fMod}`:fNicho?`${fNicho}`:'Ingresos';
-  charts['ch-anual']=new Chart($('ch-anual'),{type:'line',data:{labels,datasets:[
-    {label:lbl,data:fd,borderColor:'#2E7D32',backgroundColor:'rgba(46,125,50,.07)',tension:.45,fill:true,pointBackgroundColor:'#2E7D32',pointRadius:0,pointHoverRadius:4,borderWidth:2},
-    {label:'Gastos',data:gd,borderColor:'#C62828',backgroundColor:'rgba(198,40,40,.04)',tension:.45,fill:true,pointBackgroundColor:'#C62828',pointRadius:0,pointHoverRadius:4,borderWidth:1.5}
-  ]},options:chO()});
+  const mesActivo=$('dash-fmes')?.value||periodo;const anio=mesActivo.split('-')[0],labels=[],fd=[],gd=[];
+  for(let i=1;i<=12;i++){const mo=`${anio}-${String(i).padStart(2,'0')}`;labels.push(['','ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][i]);let facMo=fpms(DB.fac,mo);if(fNicho)facMo=facMo.filter(x=>(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho);if(fMod)facMo=facMo.filter(x=>x.modelo===fMod);fd.push(facMo.reduce((s,x)=>s+parseFloat(x.monto||0),0));gd.push(fpm(DB.gastos,mo).reduce((s,x)=>s+parseFloat(x.monto||0),0));}
+  dc('ch-anual');const lbl=fMod?`${fMod}`:fNicho?`${fNicho}`:'Ingresos';
+  charts['ch-anual']=new Chart($('ch-anual'),{type:'line',data:{labels,datasets:[{label:lbl,data:fd,borderColor:'#2E7D32',backgroundColor:'rgba(46,125,50,.07)',tension:.45,fill:true,pointBackgroundColor:'#2E7D32',pointRadius:0,pointHoverRadius:4,borderWidth:2},{label:'Gastos',data:gd,borderColor:'#C62828',backgroundColor:'rgba(198,40,40,.04)',tension:.45,fill:true,pointBackgroundColor:'#C62828',pointRadius:0,pointHoverRadius:4,borderWidth:1.5}]},options:chO()});
 }
 function rChDist(mesActivo){
-  const mes=mesActivo||$('dash-fmes')?.value||periodo;
-  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-  const textColor=isDark?'#64748b':'#9ca3af';
-  const gas=fpm(DB.gastos,mes),cats={};
-  gas.forEach(x=>{cats[x.categoria]=(cats[x.categoria]||0)+parseFloat(x.monto||0);});
-  const ks=Object.keys(cats),vs=Object.values(cats);
-  dc('ch-dist');if(!ks.length)return;
+  const mes=mesActivo||$('dash-fmes')?.value||periodo;const isDark=document.documentElement.getAttribute('data-theme')==='dark';const textColor=isDark?'#64748b':'#9ca3af';
+  const gas=fpm(DB.gastos,mes),cats={};gas.forEach(x=>{cats[x.categoria]=(cats[x.categoria]||0)+parseFloat(x.monto||0);});
+  const ks=Object.keys(cats),vs=Object.values(cats);dc('ch-dist');if(!ks.length)return;
   charts['ch-dist']=new Chart($('ch-dist'),{type:'doughnut',data:{labels:ks,datasets:[{data:vs,backgroundColor:['#C62828','#2E7D32','#1565C0','#6A1B9A','#E65100','#00838F','#546E7A'].slice(0,ks.length),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{family:'Inter,system-ui,sans-serif',size:10},boxWidth:8,boxHeight:2,pointStyle:'line',usePointStyle:true}}}}});
 }
 async function saveObj(){OBJ.meta=parseFloat($('obj-inp').value)||100000;await sOJ();rDash();}
 
 // ═══════════════════════════════════════════════════
-// FACTURACIÓN
+// FACTURACIÓN — con horas para Chatting
 // ═══════════════════════════════════════════════════
+
+// Tarifa por hora configurable (default $2)
+const TARIFA_HORA = 2;
+
+function onFacTipo(){
+  const tipo = $('fac-tipo').value;
+  const wrap = $('fac-horas-wrap');
+  if(tipo === 'Chatting'){
+    wrap.style.display = 'block';
+    // popular select de chatters
+    const chatters = EQ.empleados.filter(e => e.puesto === 'Chatter');
+    const sel = $('fac-chatter');
+    sel.innerHTML = '<option value="">— Seleccionar chatter —</option>' +
+      chatters.map(e => `<option value="${e.nom}">${e.nom}${e.team ? ' ('+e.team+')' : ''}</option>`).join('');
+  } else {
+    wrap.style.display = 'none';
+    $('fac-horas').value = '';
+    $('fac-horas-calc').style.display = 'none';
+  }
+}
+
+function calcHoras(){
+  const horas = parseFloat($('fac-horas').value || 0);
+  const calc = $('fac-horas-calc');
+  const total = horas * TARIFA_HORA;
+  if(horas > 0){
+    calc.style.display = 'block';
+    $('fac-horas-total').textContent = fmt(total);
+    $('fac-horas-det').textContent = `${horas} hs × $${TARIFA_HORA}/hora`;
+  } else {
+    calc.style.display = 'none';
+  }
+}
+
 function popFacSelects(){
-  // nichos
   const fn=$('fac-nicho');if(fn){fn.innerHTML='<option value="">— Nicho —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
   const ffn=$('fac-fn');if(ffn){ffn.innerHTML='<option value="">Todos los nichos</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
   const ffm=$('fac-fm');if(ffm){ffm.innerHTML='<option value="">Todos los modelos</option>'+MODS.map(m=>`<option>${m.nom}</option>`).join('');}
@@ -1653,16 +1368,28 @@ function onFacNicho(){
   $('fac-mod').innerHTML='<option value="">— Modelo —</option>'+mods.map(m=>`<option>${m.nom}</option>`).join('');
 }
 async function addFac(){
-  const mod=$('fac-mod').value, monto=parseFloat($('fac-monto').value||0);
-  const mes=$('fac-mes').value, fecha=$('fac-fecha').value||today();
+  const mod=$('fac-mod').value,monto=parseFloat($('fac-monto').value||0);
+  const mes=$('fac-mes').value,fecha=$('fac-fecha').value||today();
   const tipo=$('fac-tipo').value||'Suscripción';
   if(!mod||!monto){notif('Elegí modelo y monto','er');return;}
   if(!mes){notif('Indicá el mes','er');return;}
   const modObj=getModByNom(mod);
-  const newFac={id:uid(),modelo:mod,nicho:modObj?.nicho||'',monto,mes,fecha,tipo,notas:$('fac-notas').value.trim()};
+  const horas = tipo === 'Chatting' ? parseFloat($('fac-horas').value || 0) : 0;
+  const chatter = tipo === 'Chatting' ? $('fac-chatter').value : '';
+  const newFac={id:uid(),modelo:mod,nicho:modObj?.nicho||'',monto,mes,fecha,tipo,notas:$('fac-notas').value.trim(),horas,chatter};
   DB.fac.push(newFac);
-  await sDB_fac(newFac);$('fac-monto').value='';$('fac-notas').value='';
-  rFac();notif('Registrado ✓');
+  await sDB_fac(newFac);
+  $('fac-monto').value='';$('fac-notas').value='';$('fac-horas').value='';
+  $('fac-horas-calc').style.display='none';
+  rFac();notif('Registrado');
+}
+// Override sDB_fac para incluir horas y chatter
+async function sDB_fac(row){
+  await sbUpsert('wf_facturacion',[{
+    id:row.id,modelo:row.modelo,nicho:row.nicho||'',monto:row.monto,
+    mes:row.mes,fecha:row.fecha||null,tipo:row.tipo||'Chatting',notas:row.notas||'',
+    horas:row.horas||0,chatter:row.chatter||''
+  }]);
 }
 function rFac(){
   popFacSelects();
@@ -1678,41 +1405,53 @@ function rFac(){
   const tipoClr={Suscripción:'tb',Chatting:'tg',PPV:'ty',Tips:'tp',Otro:'tgr'};
   $('fac-tb').innerHTML=data.length?data.map(x=>{
     const res=calcModelo(getModByNom(x.modelo),parseFloat(x.monto||0));
-    return `<tr>
+    const horasInfo = (x.horas > 0) ? `<span style="font-size:9px;color:var(--bl);margin-left:4px">${x.horas}hs${x.chatter?' · '+x.chatter:''} = ${fmt(x.horas*TARIFA_HORA)}</span>` : '';
+    return`<tr>
       <td>${getPL(x.mes)}</td>
       <td><span class="tag tgr">${x.nicho||'—'}</span></td>
       <td class="b">${x.modelo}</td>
-      <td><span class="tag ${tipoClr[x.tipo||'Suscripción']||'tgr'}">${x.tipo||'—'}</span></td>
+      <td><span class="tag ${tipoClr[x.tipo||'Suscripción']||'tgr'}">${x.tipo||'—'}</span>${horasInfo}</td>
       <td style="color:var(--gr);font-weight:600">${fmt(x.monto)}</td>
       <td style="color:var(--re)">${fmt(res.pago)} <span style="font-size:9px;color:var(--t3)">(${res.desc})</span></td>
       <td>${res.pagaGastos?`<span class="badge-p">PAGA 50%</span>`:'<span class="badge-np">NO PAGA</span>'}</td>
       <td style="color:var(--t3)">${x.notas||'—'}</td>
-      <td><button class="btn bd2 bs" onclick="delFac('${x.id}')">×</button></td>
+      <td><button class="btn bd2 bs" onclick="delFac('${x.id}')">x</button></td>
     </tr>`;
   }).join(''):'<tr><td colspan="9" class="emp">Sin registros</td></tr>';
 }
 async function delFac(id){DB.fac=DB.fac.filter(x=>x.id!==id);await sDB_fac_del(id);rFac();}
 
 // ═══════════════════════════════════════════════════
-// GASTOS
+// GASTOS — nicho → modelo en cascada para modelo asociada
 // ═══════════════════════════════════════════════════
 function popGasSelects(){
-  // categorías dinámicas
   const gc=$('gas-cat');
   if(gc){const cur=gc.value;gc.innerHTML=CATS.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');if(!cur)onGasCat();}
-  // filtro categorías
   const gfc=$('gas-fcat');
   if(gfc){const cur2=gfc.value;gfc.innerHTML='<option value="">Todas las categorías</option>'+CATS.map(c=>`<option${c===cur2?' selected':''}>${c}</option>`).join('');}
-  // áreas dinámicas para gasto salario
   const ga=$('gas-area');
   if(ga){const cur=ga.value;ga.innerHTML='<option value="">— Seleccionar —</option>'+AREAS.map(a=>`<option${a===cur?' selected':''}>${a}</option>`).join('');}
-  const sm=$('gas-mod-asoc');
-  if(sm)sm.innerHTML='<option value="">— Sin asociar —</option>'+MODS.map(m=>`<option>${m.nom}</option>`).join('');
+  // poblar select de nicho para modelo asociada
+  const gna=$('gas-nicho-asoc');
+  if(gna){
+    const curNicho=gna.value;
+    gna.innerHTML='<option value="">— Sin asociar —</option>'+NICHOS.map(n=>`<option${n===curNicho?' selected':''}>${n}</option>`).join('');
+  }
+  // poblar modelos según nicho seleccionado
+  onGasNichoAsoc();
 }
+
+function onGasNichoAsoc(){
+  const nicho = $('gas-nicho-asoc')?.value || '';
+  const sm = $('gas-mod-asoc');
+  if(!sm) return;
+  const mods = nicho ? MODS.filter(m => m.nicho === nicho) : MODS;
+  sm.innerHTML = '<option value="">— Sin modelo —</option>' + mods.map(m => `<option>${m.nom}</option>`).join('');
+}
+
 function onGasCat(){
   const cat=$('gas-cat').value;
-  const isSal=cat==='SALARIO';
-  const isSus=cat==='SUSCRIPCION';
+  const isSal=cat==='SALARIO';const isSus=cat==='SUSCRIPCION';
   $('gas-area-wrap').style.display=isSal?'flex':'none';
   $('gas-team-wrap').style.display='none';
   $('gas-emp-wrap').style.display=isSal?'flex':'none';
@@ -1720,13 +1459,9 @@ function onGasCat(){
   if(!isSal){$('gas-emp').innerHTML='<option value="">—</option>';}
 }
 function onGasArea(){
-  const area=$('gas-area').value;
-  const isChatting=area==='Chatting';
-  // mostrar team solo si el área tiene teams (Chatting)
+  const area=$('gas-area').value;const isChatting=area==='Chatting';
   $('gas-team-wrap').style.display=isChatting?'flex':'none';
-  const gt=$('gas-team');
-  if(gt)gt.innerHTML='<option value="">— Seleccionar team —</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
-  // poblar empleados del área seleccionada
+  const gt=$('gas-team');if(gt)gt.innerHTML='<option value="">— Seleccionar team —</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
   const empsArea=EQ.empleados.filter(e=>!area||(e.area===area||e.puesto&&getPuestoNoms(area).some(p=>p.nom===e.puesto)));
   $('gas-emp').innerHTML='<option value="">— Seleccionar —</option>'+empsArea.map(e=>`<option>${e.nom} (${e.puesto||'—'})</option>`).join('');
   if(isChatting)$('gas-emp').innerHTML='<option value="">— Elegí team primero —</option>';
@@ -1737,73 +1472,50 @@ function onGasTeam(){
   $('gas-emp').innerHTML='<option value="">— Seleccionar chatter —</option>'+chatters.map(e=>`<option>${e.nom}</option>`).join('');
 }
 async function addGasto(){
-  const cat=$('gas-cat').value, desc=$('gas-desc').value.trim();
-  const monto=parseFloat($('gas-monto').value||0), fecha=$('gas-fecha').value||today();
-  const area=$('gas-area').value, team=$('gas-team').value;
+  const cat=$('gas-cat').value,desc=$('gas-desc').value.trim();
+  const monto=parseFloat($('gas-monto').value||0),fecha=$('gas-fecha').value||today();
+  const area=$('gas-area').value,team=$('gas-team').value;
   const emp=$('gas-emp').value;
-  const soft=$('gas-soft').value.trim(), modAsoc=$('gas-mod-asoc').value;
+  const soft=$('gas-soft').value.trim(),modAsoc=$('gas-mod-asoc').value;
   const pagador=$('gas-pagador').value||'Agencia';
   if(!desc||!monto){notif('Descripción y monto requeridos','er');return;}
   const puesto=area==='Chatting'?'Chatting':area;
   const newGas={id:uid(),categoria:cat,descripcion:desc,monto,fecha,puesto,area,team,empleado:emp,software:soft,modeloAsoc:modAsoc,pagador,notas:$('gas-notas').value.trim()};
-  DB.gastos.push(newGas);
-  await sDB_gas(newGas);
+  DB.gastos.push(newGas);await sDB_gas(newGas);
   $('gas-desc').value='';$('gas-monto').value='';$('gas-soft').value='';$('gas-notas').value='';
-  rGas();notif('Gasto registrado ✓');
+  rGas();notif('Gasto registrado');
 }
 async function autoCalc(){
-  const fac=fpms(DB.fac,periodo);
-  if(!fac.length){notif('Sin facturación en este período','er');return;}
-  let cnt=0;
-  const nuevos=[];
+  const fac=fpms(DB.fac,periodo);if(!fac.length){notif('Sin facturación en este período','er');return;}
+  let cnt=0;const nuevos=[];
   EQ.empleados.forEach(emp=>{
-    const res=calcEmpleado(emp,periodo);
-    if(res.total<=0)return;
+    const res=calcEmpleado(emp,periodo);if(res.total<=0)return;
     const key=`Sueldo ${emp.nom} — ${getPL(periodo)}`;
     if(!DB.gastos.find(g=>g.descripcion===key&&getMes(g.fecha)===periodo)){
       const isChatting=emp.puesto==='Chatter';
-      const g={id:uid(),categoria:'SALARIO',descripcion:key,monto:parseFloat(res.total.toFixed(2)),fecha:today(),
-        puesto:emp.puesto,area:isChatting?'Chatting':'Otro',team:emp.team||'',empleado:emp.nom,software:'',modeloAsoc:'',notas:'Auto-calculado'};
+      const g={id:uid(),categoria:'SALARIO',descripcion:key,monto:parseFloat(res.total.toFixed(2)),fecha:today(),puesto:emp.puesto,area:isChatting?'Chatting':'Otro',team:emp.team||'',empleado:emp.nom,software:'',modeloAsoc:'',notas:'Auto-calculado'};
       DB.gastos.push(g);nuevos.push(g);cnt++;
     }
   });
-  await Promise.all(nuevos.map(g=>sDB_gas(g)));
-  rGas();notif(cnt>0?`${cnt} salarios calculados ✓`:'Ya calculados');
+  await Promise.all(nuevos.map(g=>sDB_gas(g)));rGas();notif(cnt>0?`${cnt} salarios calculados`:'Ya calculados');
 }
-async function addCat(){
-  const v=$('cat-inp').value.trim().toUpperCase();
-  if(!v){notif('Ingresá un nombre','er');return;}
-  if(CATS.includes(v)){notif('Ya existe','er');return;}
-  CATS.push(v);await sCA();$('cat-inp').value='';rGas();notif('Categoría agregada ✓');
-}
-async function delCat(c){
-  CATS=CATS.filter(x=>x!==c);await sCA();rGas();notif('Eliminada');
-}
-function rCats(){
-  const cl=$('cats-list');
-  if(!cl)return;
-  cl.innerHTML=CATS.map(c=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px">${c}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delCat('${c}')">×</span></div>`).join('');
-}
+async function addCat(){const v=$('cat-inp').value.trim().toUpperCase();if(!v){notif('Ingresá un nombre','er');return;}if(CATS.includes(v)){notif('Ya existe','er');return;}CATS.push(v);await sCA();$('cat-inp').value='';rGas();notif('Categoría agregada');}
+async function delCat(c){CATS=CATS.filter(x=>x!==c);await sCA();rGas();}
+function rCats(){const cl=$('cats-list');if(!cl)return;cl.innerHTML=CATS.map(c=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px">${c}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delCat('${c}')">x</span></div>`).join('');}
 function rGas(){
   popGasSelects();rCats();
   if(!$('gas-fmes').value)$('gas-fmes').value=periodo;
   let data=DB.gastos.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  const fc=$('gas-fcat')?.value, fmes=$('gas-fmes')?.value;
+  const fc=$('gas-fcat')?.value,fmes=$('gas-fmes')?.value;
   if(fc)data=data.filter(x=>x.categoria===fc);
   if(fmes)data=data.filter(x=>getMes(x.fecha)===fmes);
   const total=data.reduce((s,x)=>s+parseFloat(x.monto||0),0);
   $('gas-ttag').textContent='Total: '+fmt(total);
-  // colores fijos para categorías conocidas, tgr para el resto
   const cClr={SALARIO:'tr2',SUSCRIPCION:'tb',MARKETING:'ty',OPERATIVO:'tgr',IMPUESTO:'tp','RETIRO DUEÑO':'tg',RETIRO:'tg',OTRO:'tgr'};
   $('gas-tb').innerHTML=data.length?data.map(x=>{
-    const det=x.categoria==='SALARIO'
-      ?(x.area==='Chatting'
-        ?`Chatting${x.team?' → '+x.team:''}${x.empleado?' → '+x.empleado:''}`
-        :`${x.puesto||x.area||''}${x.empleado?' → '+x.empleado:''}`)
-      :x.categoria==='SUSCRIPCION'?x.software
-      :x.empleado||'—';
+    const det=x.categoria==='SALARIO'?(x.area==='Chatting'?`Chatting${x.team?' → '+x.team:''}${x.empleado?' → '+x.empleado:''}`:x.categoria==='SUSCRIPCION'?x.software:`${x.puesto||x.area||''}${x.empleado?' → '+x.empleado:''}`):x.categoria==='SUSCRIPCION'?x.software:x.empleado||'—';
     const pagClr={'Agustín':'tb',Marco:'tp',Agencia:'tg'};
-    return `<tr>
+    return`<tr>
       <td>${x.fecha}</td>
       <td><span class="tag ${cClr[x.categoria]||'tgr'}">${x.categoria}</span></td>
       <td class="b">${x.descripcion}</td>
@@ -1811,7 +1523,7 @@ function rGas(){
       <td><span class="tag ${pagClr[x.pagador]||'tgr'}">${x.pagador||'Agencia'}</span></td>
       <td>${x.modeloAsoc?`<span class="tag tg">${x.modeloAsoc}</span>`:'—'}</td>
       <td style="color:var(--re);font-weight:600">-${fmt(x.monto)}</td>
-      <td><button class="btn bd2 bs" onclick="delGas('${x.id}')">×</button></td>
+      <td><button class="btn bd2 bs" onclick="delGas('${x.id}')">x</button></td>
     </tr>`;
   }).join(''):'<tr><td colspan="8" class="emp">Sin gastos</td></tr>';
 }
@@ -1821,209 +1533,77 @@ async function delGas(id){DB.gastos=DB.gastos.filter(x=>x.id!==id);await sDB_gas
 // PAGOS AL EQUIPO
 // ═══════════════════════════════════════════════════
 let pagTabAct='tl';
-function pagTab(t,el){
-  pagTabAct=t;
-  document.querySelectorAll('.tabb').forEach(x=>x.classList.remove('on'));
-  if(el)el.classList.add('on');
-  $('pag-tl').style.display=t==='tl'?'block':'none';
-  $('pag-ch').style.display=t==='ch'?'block':'none';
-  $('pag-ed').style.display=t==='ed'?'block':'none';
-  $('pag-mod').style.display=t==='mod'?'block':'none';
-}
+function pagTab(t,el){pagTabAct=t;document.querySelectorAll('.tabb').forEach(x=>x.classList.remove('on'));if(el)el.classList.add('on');$('pag-tl').style.display=t==='tl'?'block':'none';$('pag-ch').style.display=t==='ch'?'block':'none';$('pag-ed').style.display=t==='ed'?'block':'none';$('pag-mod').style.display=t==='mod'?'block':'none';}
 function pkKey(mes,tipo,nom){return`${mes}|${tipo}|${nom}`;}
-
 function rPagos(){
   if(!$('pag-mes').value)$('pag-mes').value=periodo;
   const mes=$('pag-mes').value||periodo;
-  const fac=fpms(DB.fac,mes);
-  const gas=fpm(DB.gastos,mes);
+  const fac=fpms(DB.fac,mes),gas=fpm(DB.gastos,mes);
   const totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  // Poblar filtro teams
-  const pft=$('pag-team-flt');
-  if(pft)pft.innerHTML='<option value="">Todos los teams</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
-
-  // ── TAB TL ──
+  const pft=$('pag-team-flt');if(pft)pft.innerHTML='<option value="">Todos los teams</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
   const tlEmps=EQ.empleados.filter(e=>e.puesto==='Team Leader');
   const tlData=tlEmps.map(emp=>{const res=calcEmpleado(emp,mes);return{...emp,total:res.total,desc:res.desc};});
   const totalTL=tlData.reduce((s,e)=>s+e.total,0);
   $('pag-ttl-tl').textContent='Total: '+fmt(totalTL);
-  $('pag-wg-tl').innerHTML=tlData.map(e=>{
-    const k=pkKey(mes,'tl',e.nom);const pg=DB.pagPagos[k];
-    return `<div class="wc ${pg?'ok':''}"><div class="wn">${e.nom}</div><div class="wr">Team Leader</div><div class="wa">${fmt(e.total)}</div><div class="wd">${e.desc}</div></div>`;
-  }).join('')||'<div class="emp" style="grid-column:span 4">Sin Team Leaders</div>';
-  $('pag-tb-tl').innerHTML=tlData.map(e=>{
-    const k=pkKey(mes,'tl',e.nom);const pg=DB.pagPagos[k];
-    return `<tr><td class="b">${e.nom}</td><td><span class="tag ty">Team Leader</span></td>
-      <td style="font-size:10px;color:var(--t2)">${e.desc}</td>
-      <td style="color:var(--ye);font-weight:700">${fmt(e.total)}</td>
-      <td>${pg?'<span class="tag tg">✓ Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td>
-      <td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar pagado'}</button></td></tr>`;
-  }).join('')||'<tr><td colspan="6" class="emp">Sin Team Leaders</td></tr>';
-
-  // ── TAB CHATTERS ──
+  $('pag-wg-tl').innerHTML=tlData.map(e=>{const k=pkKey(mes,'tl',e.nom);const pg=DB.pagPagos[k];return`<div class="wc ${pg?'ok':''}"><div class="wn">${e.nom}</div><div class="wr">Team Leader</div><div class="wa">${fmt(e.total)}</div><div class="wd">${e.desc}</div></div>`;}).join('')||'<div class="emp" style="grid-column:span 4">Sin Team Leaders</div>';
+  $('pag-tb-tl').innerHTML=tlData.map(e=>{const k=pkKey(mes,'tl',e.nom);const pg=DB.pagPagos[k];return`<tr><td class="b">${e.nom}</td><td><span class="tag ty">Team Leader</span></td><td style="font-size:10px;color:var(--t2)">${e.desc}</td><td style="color:var(--ye);font-weight:700">${fmt(e.total)}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar pagado'}</button></td></tr>`;}).join('')||'<tr><td colspan="6" class="emp">Sin Team Leaders</td></tr>';
   rPagChatters();
-
-  // ── TAB EDITORES / OTROS ──
   const otRoles=['Editor/a','Content Manager','Poster','Asistente'];
   const edData=EQ.empleados.filter(e=>otRoles.includes(e.puesto)).map(emp=>{const res=calcEmpleado(emp,mes);return{...emp,total:res.total,desc:res.desc};});
   const totalEd=edData.reduce((s,e)=>s+e.total,0);
   $('pag-ttl-ed').textContent='Total: '+fmt(totalEd);
-  $('pag-wg-ed').innerHTML=edData.map(e=>{
-    const k=pkKey(mes,'ed',e.nom);const pg=DB.pagPagos[k];
-    return `<div class="wc ${pg?'ok':''}"><div class="wn">${e.nom}</div><div class="wr">${e.puesto}</div><div class="wa">${fmt(e.total)}</div><div class="wd">${e.desc}</div></div>`;
-  }).join('')||'<div class="emp" style="grid-column:span 4">Sin empleados de este tipo</div>';
-  const stLbl={fijo:'Fijo','pct-total':'% Total','pct-modelos':'% Modelos','pct-techo':'% c/techo'};
-  $('pag-tb-ed').innerHTML=edData.map(e=>{
-    const k=pkKey(mes,'ed',e.nom);const pg=DB.pagPagos[k];
-    return `<tr><td class="b">${e.nom}</td><td><span class="tag tp">${e.puesto}</span></td>
-      <td><span class="tag tgr">${stLbl[e.salTipo||'fijo']}</span></td>
-      <td style="font-size:10px;color:var(--t2)">${e.desc}</td>
-      <td style="color:var(--ye);font-weight:700">${fmt(e.total)}</td>
-      <td>${pg?'<span class="tag tg">✓ Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td>
-      <td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar pagado'}</button></td></tr>`;
-  }).join('')||'<tr><td colspan="7" class="emp">Sin empleados</td></tr>';
-
-  // ── TAB MODELOS ──
+  $('pag-wg-ed').innerHTML=edData.map(e=>{const k=pkKey(mes,'ed',e.nom);const pg=DB.pagPagos[k];return`<div class="wc ${pg?'ok':''}"><div class="wn">${e.nom}</div><div class="wr">${e.puesto}</div><div class="wa">${fmt(e.total)}</div><div class="wd">${e.desc}</div></div>`;}).join('')||'<div class="emp" style="grid-column:span 4">Sin empleados de este tipo</div>';
+  const stLbl={fijo:'Fijo','por-hora':'Por hora','pct-total':'% Total','pct-modelos':'% Modelos','pct-techo':'% c/techo'};
+  $('pag-tb-ed').innerHTML=edData.map(e=>{const k=pkKey(mes,'ed',e.nom);const pg=DB.pagPagos[k];return`<tr><td class="b">${e.nom}</td><td><span class="tag tp">${e.puesto}</span></td><td><span class="tag tgr">${stLbl[e.salTipo||'fijo']}</span></td><td style="font-size:10px;color:var(--t2)">${e.desc}</td><td style="color:var(--ye);font-weight:700">${fmt(e.total)}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar pagado'}</button></td></tr>`;}).join('')||'<tr><td colspan="7" class="emp">Sin empleados</td></tr>';
   const modMap={};fac.forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
-  const modData=Object.entries(modMap).map(([nom,facturado])=>{
-    const mod=getModByNom(nom);const res=calcModelo(mod,facturado);
-    const gCargo=res.pagaGastos?totalGas*0.5:0;
-    return{nom,nicho:mod?.nicho||'—',facturado,res,gCargo,totalNeto:res.pago+gCargo};
-  });
+  const modData=Object.entries(modMap).map(([nom,facturado])=>{const mod=getModByNom(nom);const res=calcModelo(mod,facturado);const gCargo=res.pagaGastos?totalGas*0.5:0;return{nom,nicho:mod?.nicho||'—',facturado,res,gCargo,totalNeto:res.pago+gCargo};});
   const totalMod=modData.reduce((s,m)=>s+m.totalNeto,0);
   $('pag-ttl-mod').textContent='Total: '+fmt(totalMod);
-  $('pag-wg-mod').innerHTML=modData.map(m=>{
-    const k=pkKey(mes,'mod',m.nom);const pg=DB.pagPagos[k];
-    return `<div class="wc ${pg?'ok':''}"><div class="wn">${m.nom}</div><div class="wr">${m.nicho}</div><div class="wa">${fmt(m.totalNeto)}</div><div class="wd">${fmt(m.facturado)} fac.<br>${m.res.desc}<br>${m.gCargo>0?'+ 50% gastos: '+fmt(m.gCargo):'Sin cargo gastos'}</div></div>`;
-  }).join('')||'<div class="emp" style="grid-column:span 4">Sin facturación este mes</div>';
-  // título dinámico del tab editores
-  const edPuestos=[...new Set(EQ.empleados.filter(e=>otRoles.includes(e.puesto)).map(e=>e.puesto))];
-  const edTitleEl=$('pag-ed-title');
-  if(edTitleEl)edTitleEl.textContent='Detalle — '+(edPuestos.length?edPuestos.join(', '):'Editores y Staff');
-  $('pag-tb-mod').innerHTML=modData.map(m=>{
-    const k=pkKey(mes,'mod',m.nom);const pg=DB.pagPagos[k];
-    return `<tr><td class="b">${m.nom}</td><td><span class="tag tgr">${m.nicho}</span></td>
-      <td style="color:var(--gr)">${fmt(m.facturado)}</td><td style="font-size:10px">${m.res.desc}</td>
-      <td style="color:var(--bl)">${fmt(m.res.pago)}</td>
-      <td>${m.res.pagaGastos?'<span class="badge-p">SÍ</span>':'<span class="badge-np">NO</span>'}</td>
-      <td style="color:var(--re)">${m.gCargo>0?fmt(m.gCargo):'—'}</td>
-      <td style="color:var(--ye);font-weight:700">${fmt(m.totalNeto)}</td>
-      <td>${pg?'<span class="tag tg">✓ Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td>
-      <td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar'}</button></td></tr>`;
-  }).join('')||'<tr><td colspan="10" class="emp">Sin datos</td></tr>';
+  $('pag-wg-mod').innerHTML=modData.map(m=>{const k=pkKey(mes,'mod',m.nom);const pg=DB.pagPagos[k];return`<div class="wc ${pg?'ok':''}"><div class="wn">${m.nom}</div><div class="wr">${m.nicho}</div><div class="wa">${fmt(m.totalNeto)}</div><div class="wd">${fmt(m.facturado)} fac.<br>${m.res.desc}<br>${m.gCargo>0?'+ 50% gastos: '+fmt(m.gCargo):'Sin cargo gastos'}</div></div>`;}).join('')||'<div class="emp" style="grid-column:span 4">Sin facturación este mes</div>';
+  const edTitleEl=$('pag-ed-title');if(edTitleEl)edTitleEl.textContent='Detalle — Editores y Staff';
+  $('pag-tb-mod').innerHTML=modData.map(m=>{const k=pkKey(mes,'mod',m.nom);const pg=DB.pagPagos[k];return`<tr><td class="b">${m.nom}</td><td><span class="tag tgr">${m.nicho}</span></td><td style="color:var(--gr)">${fmt(m.facturado)}</td><td style="font-size:10px">${m.res.desc}</td><td style="color:var(--bl)">${fmt(m.res.pago)}</td><td>${m.res.pagaGastos?'<span class="badge-p">SI</span>':'<span class="badge-np">NO</span>'}</td><td style="color:var(--re)">${m.gCargo>0?fmt(m.gCargo):'—'}</td><td style="color:var(--ye);font-weight:700">${fmt(m.totalNeto)}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar'}</button></td></tr>`;}).join('')||'<tr><td colspan="10" class="emp">Sin datos</td></tr>';
 }
-
 function rPagChatters(){
-  const mes=$('pag-mes').value||periodo;
-  const teamFlt=$('pag-team-flt')?.value||'';
-  let chatEmps=EQ.empleados.filter(e=>e.puesto==='Chatter');
-  if(teamFlt)chatEmps=chatEmps.filter(e=>e.team===teamFlt);
+  const mes=$('pag-mes').value||periodo;const teamFlt=$('pag-team-flt')?.value||'';
+  let chatEmps=EQ.empleados.filter(e=>e.puesto==='Chatter');if(teamFlt)chatEmps=chatEmps.filter(e=>e.team===teamFlt);
   const chData=chatEmps.map(emp=>{const res=calcEmpleado(emp,mes);return{...emp,total:res.total,desc:res.desc};});
   const totalCh=chData.reduce((s,e)=>s+e.total,0);
-  $('pag-ttl-ch').textContent='Total: '+fmt(totalCh);
-  $('pag-ch-title').textContent='Chatters'+(teamFlt?' — '+teamFlt:'');
-  $('pag-wg-ch').innerHTML=chData.map(e=>{
-    const k=pkKey(mes,'ch',e.nom);const pg=DB.pagPagos[k];
-    return `<div class="wc ${pg?'ok':''}"><div class="wn">${e.nom}</div><div class="wr">Chatter · ${e.team||'Sin team'}</div><div class="wa">${fmt(e.total)}</div><div class="wd">${e.desc}</div></div>`;
-  }).join('')||`<div class="emp" style="grid-column:span 4">Sin chatters${teamFlt?' en '+teamFlt:' configurados'}</div>`;
-  $('pag-tb-ch').innerHTML=chData.map(e=>{
-    const k=pkKey(mes,'ch',e.nom);const pg=DB.pagPagos[k];
-    return `<tr><td class="b">${e.nom}</td><td><span class="tag tb">Chatter</span></td>
-      <td><span class="tag tgr">${e.team||'—'}</span></td>
-      <td style="font-size:10px;color:var(--t2)">${e.desc}</td>
-      <td style="color:var(--ye);font-weight:700">${fmt(e.total)}</td>
-      <td>${pg?'<span class="tag tg">✓ Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td>
-      <td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar pagado'}</button></td></tr>`;
-  }).join('')||'<tr><td colspan="7" class="emp">Sin chatters</td></tr>';
+  $('pag-ttl-ch').textContent='Total: '+fmt(totalCh);$('pag-ch-title').textContent='Chatters'+(teamFlt?' — '+teamFlt:'');
+  $('pag-wg-ch').innerHTML=chData.map(e=>{const k=pkKey(mes,'ch',e.nom);const pg=DB.pagPagos[k];return`<div class="wc ${pg?'ok':''}"><div class="wn">${e.nom}</div><div class="wr">Chatter · ${e.team||'Sin team'}</div><div class="wa">${fmt(e.total)}</div><div class="wd">${e.desc}</div></div>`;}).join('')||`<div class="emp" style="grid-column:span 4">Sin chatters${teamFlt?' en '+teamFlt:' configurados'}</div>`;
+  $('pag-tb-ch').innerHTML=chData.map(e=>{const k=pkKey(mes,'ch',e.nom);const pg=DB.pagPagos[k];return`<tr><td class="b">${e.nom}</td><td><span class="tag tb">Chatter</span></td><td><span class="tag tgr">${e.team||'—'}</span></td><td style="font-size:10px;color:var(--t2)">${e.desc}</td><td style="color:var(--ye);font-weight:700">${fmt(e.total)}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar pagado'}</button></td></tr>`;}).join('')||'<tr><td colspan="7" class="emp">Sin chatters</td></tr>';
 }
-async function tglPago(k){DB.pagPagos[k]=!DB.pagPagos[k];await sDB_pago(k,DB.pagPagos[k]);rPagos();notif(DB.pagPagos[k]?'Marcado como pagado ✓':'Desmarcado');}
+async function tglPago(k){DB.pagPagos[k]=!DB.pagPagos[k];await sDB_pago(k,DB.pagPagos[k]);rPagos();notif(DB.pagPagos[k]?'Marcado como pagado':'Desmarcado');}
 
 // ═══════════════════════════════════════════════════
 // REPORTES
 // ═══════════════════════════════════════════════════
 function rRep(){
-  const anio=$('rep-anio')?.value||'2026';
-  const labels=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  const anio=$('rep-anio')?.value||'2026';const labels=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
   const fd=labels.map((_,i)=>fpms(DB.fac,`${anio}-${String(i+1).padStart(2,'0')}`).reduce((s,x)=>s+parseFloat(x.monto||0),0));
   const gd=labels.map((_,i)=>fpm(DB.gastos,`${anio}-${String(i+1).padStart(2,'0')}`).reduce((s,x)=>s+parseFloat(x.monto||0),0));
   const nd=fd.map((v,i)=>v-gd[i]);
   let mej='—',mejV=0;fd.forEach((v,i)=>{if(v>mejV){mejV=v;mej=labels[i]+' '+anio;}});
   const con=fd.filter(v=>v>0);const prom=con.length?con.reduce((s,v)=>s+v,0)/con.length:0;
   const tA=fd.reduce((s,v)=>s+v,0),tGA=gd.reduce((s,v)=>s+v,0);
-  $('rep-mej').textContent=mej;$('rep-mej-v').textContent=fmt(mejV);
-  $('rep-prom').textContent=fmt(prom);$('rep-anual').textContent=fmt(tA);
-  $('rep-ratio').textContent=fmtP(tA>0?(tGA/tA)*100:0);
-  dc('ch-rep');
-  charts['ch-rep']=new Chart($('ch-rep'),{type:'line',data:{labels,datasets:[
-    {label:'Ingresos',data:fd,borderColor:'#2E7D32',backgroundColor:'rgba(46,125,50,.07)',tension:.4,fill:true,pointBackgroundColor:'#2E7D32',pointRadius:0,pointHoverRadius:4,borderWidth:2},
-    {label:'Gastos',data:gd,borderColor:'#C62828',backgroundColor:'rgba(198,40,40,.05)',tension:.4,fill:true,pointBackgroundColor:'#C62828',pointRadius:0,pointHoverRadius:4,borderWidth:2},
-    {label:'Neto',data:nd,borderColor:'#1565C0',backgroundColor:'transparent',tension:.4,borderDash:[4,3],pointRadius:0,pointHoverRadius:4,borderWidth:2}
-  ]},options:chO()});
+  $('rep-mej').textContent=mej;$('rep-mej-v').textContent=fmt(mejV);$('rep-prom').textContent=fmt(prom);$('rep-anual').textContent=fmt(tA);$('rep-ratio').textContent=fmtP(tA>0?(tGA/tA)*100:0);
+  dc('ch-rep');charts['ch-rep']=new Chart($('ch-rep'),{type:'line',data:{labels,datasets:[{label:'Ingresos',data:fd,borderColor:'#2E7D32',backgroundColor:'rgba(46,125,50,.07)',tension:.4,fill:true,pointBackgroundColor:'#2E7D32',pointRadius:0,pointHoverRadius:4,borderWidth:2},{label:'Gastos',data:gd,borderColor:'#C62828',backgroundColor:'rgba(198,40,40,.05)',tension:.4,fill:true,pointBackgroundColor:'#C62828',pointRadius:0,pointHoverRadius:4,borderWidth:2},{label:'Neto',data:nd,borderColor:'#1565C0',backgroundColor:'transparent',tension:.4,borderDash:[4,3],pointRadius:0,pointHoverRadius:4,borderWidth:2}]},options:chO()});
   const mm={};DB.fac.filter(x=>x.mes&&x.mes.startsWith(anio)).forEach(x=>{mm[x.modelo]=(mm[x.modelo]||0)+parseFloat(x.monto||0);});
-  const sm=Object.entries(mm).sort((a,b)=>b[1]-a[1]);const maxM=sm[0]?sm[0][1]:1;
-  const clrs=['#00d68f','#45aaf2','#ffd32a','#ff4757','#a29bfe','#fd79a8'];
+  const sm=Object.entries(mm).sort((a,b)=>b[1]-a[1]);const maxM=sm[0]?sm[0][1]:1;const clrs=['#00d68f','#45aaf2','#ffd32a','#ff4757','#a29bfe','#fd79a8'];
   $('rep-mods').innerHTML=sm.length?sm.map(([n,v],i)=>`<div class="bdi"><div class="bdl" style="color:var(--tx)">${n}</div><div class="bdb"><div class="bdf" style="width:${(v/maxM)*100}%;background:${clrs[i%clrs.length]}"></div></div><div class="bdv" style="color:${clrs[i%clrs.length]}">${fmt(v)}</div></div>`).join(''):'<div class="emp">Sin datos</div>';
   const cg={};DB.gastos.filter(x=>getMes(x.fecha).startsWith(anio)).forEach(x=>{cg[x.categoria]=(cg[x.categoria]||0)+parseFloat(x.monto||0);});
-  dc('ch-rep-g');const gk=Object.keys(cg),gv=Object.values(cg);
-  const repTextColor=document.documentElement.getAttribute('data-theme')==='dark'?'#64748b':'#9ca3af';
-  if(gk.length)charts['ch-rep-g']=new Chart($('ch-rep-g'),{type:'doughnut',data:{labels:gk,datasets:[{data:gv,backgroundColor:['#C62828','#2E7D32','#1565C0','#6A1B9A','#E65100','#00838F','#546E7A'].slice(0,gk.length),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:repTextColor,font:{family:'Inter,system-ui,sans-serif',size:10},boxWidth:8,boxHeight:2,pointStyle:'line',usePointStyle:true}}}}});;
+  dc('ch-rep-g');const gk=Object.keys(cg),gv=Object.values(cg);const repTextColor=document.documentElement.getAttribute('data-theme')==='dark'?'#64748b':'#9ca3af';
+  if(gk.length)charts['ch-rep-g']=new Chart($('ch-rep-g'),{type:'doughnut',data:{labels:gk,datasets:[{data:gv,backgroundColor:['#C62828','#2E7D32','#1565C0','#6A1B9A','#E65100','#00838F','#546E7A'].slice(0,gk.length),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:repTextColor,font:{family:'Inter,system-ui,sans-serif',size:10},boxWidth:8,boxHeight:2,pointStyle:'line',usePointStyle:true}}}}});
 }
 
 // ═══════════════════════════════════════════════════
 // IA
 // ═══════════════════════════════════════════════════
 function rIA(){updSnap();updAlerts();}
-function buildCtx(){
-  const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);
-  const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const mm={};fac.forEach(x=>{mm[x.modelo]=(mm[x.modelo]||0)+parseFloat(x.monto||0);});
-  const anio=periodo.split('-')[0];
-  const facA=Array.from({length:12},(_,i)=>fpms(DB.fac,`${anio}-${String(i+1).padStart(2,'0')}`).reduce((s,x)=>s+parseFloat(x.monto||0),0)).reduce((s,v)=>s+v,0);
-  return `Sos asesor financiero de WHYnot Creators, agencia de chatting OnlyFans.
-Período: ${getPL(periodo)} | Fac: ${fmt(tF)} | Gastos: ${fmt(tG)} | Neta: ${fmt(tF-tG)} | Margen: ${tF>0?fmtP(((tF-tG)/tF)*100):'N/A'}
-Por modelo: ${JSON.stringify(mm)}
-Objetivo ${anio}: ${fmt(OBJ.meta)} | Acumulado: ${fmt(facA)} (${fmtP((facA/OBJ.meta)*100)})
-Modelos: ${MODS.map(m=>`${m.nom}(${m.nicho||'?'},${m.tipo}${m.tipo==='fijo'?':'+m.pct+'%':' escalonado'})`).join(', ')}
-Empleados: ${EQ.empleados.map(e=>`${e.nom}(${e.puesto},${e.salTipo})`).join(', ')}
-Respondé en español, conciso y con datos exactos.`;
-}
-function updSnap(){
-  const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);
-  const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  $('ai-snap').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
-    ${[['Período',getPL(periodo),'var(--gr)'],['Facturación',fmt(tF),'var(--gr)'],['Gastos',fmt(tG),'var(--re)'],['Neta',fmt(tF-tG),(tF-tG)>=0?'var(--gr)':'var(--re)'],['Margen',tF>0?fmtP(((tF-tG)/tF)*100):'—','var(--ye)'],['Modelos',MODS.length,'var(--t2)'],['Empleados',EQ.empleados.length,'var(--t2)']].map(([l,v,c])=>`<div style="font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)">${l}</div><div style="font-size:11px;font-weight:600;color:${c}">${v}</div>`).join('')}
-  </div>`;
-}
-function updAlerts(){
-  const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);
-  const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const al=[];
-  if(!fac.length)al.push({i:'ℹ️',m:'Sin facturación en este período.'});
-  if(tG>tF&&tF>0)al.push({i:'⚠️',m:'Los gastos superan la facturación.'});
-  if(tF>0&&tG/tF>.7)al.push({i:'⚡',m:'Ratio gastos/facturación mayor al 70%.'});
-  if(!MODS.length)al.push({i:'ℹ️',m:'No hay modelos configuradas. Andá a Modelos.'});
-  if(!EQ.empleados.length)al.push({i:'ℹ️',m:'No hay empleados configurados. Andá a Equipo.'});
-  $('ai-alr').innerHTML=al.length?al.map(a=>`<div style="display:flex;gap:6px;padding:6px 0;border-bottom:1px solid var(--br);align-items:flex-start"><span style="flex-shrink:0">${a.i}</span><span style="font-size:10px;color:var(--t2);line-height:1.6">${a.m}</span></div>`).join(''):'<div style="font-size:10px;color:var(--gr);padding:6px 0">✓ Sin alertas.</div>';
-}
-async function sendAI(){
-  const inp=$('ai-in');const msg=inp.value.trim();if(!msg)return;
-  inp.value='';appAI('u',msg);aiHist.push({role:'user',content:msg});
-  const tid='t'+Date.now(),msgs=$('ams');
-  const d=document.createElement('div');d.className='am a';d.id=tid;
-  d.innerHTML='<div class="aav">AI</div><div class="amb"><div class="atyp"><span></span><span></span><span></span></div></div>';
-  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
-  try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildCtx(),messages:aiHist})});
-    const dt=await r.json();$(tid)?.remove();
-    const rp=dt.content?.[0]?.text||'Sin respuesta.';
-    aiHist.push({role:'assistant',content:rp});appAI('a',rp);
-  }catch(e){$(tid)?.remove();appAI('a','Error de conexión.');}
-}
-function appAI(role,text){
-  const msgs=$('ams'),d=document.createElement('div');d.className='am '+role;
-  d.innerHTML=`<div class="aav">${role==='u'?'TU':'AI'}</div><div class="amb">${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>`;
-  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
-}
+function buildCtx(){const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);const mm={};fac.forEach(x=>{mm[x.modelo]=(mm[x.modelo]||0)+parseFloat(x.monto||0);});const anio=periodo.split('-')[0];const facA=Array.from({length:12},(_,i)=>fpms(DB.fac,`${anio}-${String(i+1).padStart(2,'0')}`).reduce((s,x)=>s+parseFloat(x.monto||0),0)).reduce((s,v)=>s+v,0);return`Sos asesor financiero de WHYnot Creators, agencia de chatting OnlyFans.\nPeríodo: ${getPL(periodo)} | Fac: ${fmt(tF)} | Gastos: ${fmt(tG)} | Neta: ${fmt(tF-tG)} | Margen: ${tF>0?fmtP(((tF-tG)/tF)*100):'N/A'}\nPor modelo: ${JSON.stringify(mm)}\nObjetivo ${anio}: ${fmt(OBJ.meta)} | Acumulado: ${fmt(facA)} (${fmtP((facA/OBJ.meta)*100)})\nModelos: ${MODS.map(m=>`${m.nom}(${m.nicho||'?'},${m.tipo}${m.tipo==='fijo'?':'+m.pct+'%':' escalonado'})`).join(', ')}\nEmpleados: ${EQ.empleados.map(e=>`${e.nom}(${e.puesto},${e.salTipo})`).join(', ')}\nRespondé en español, conciso y con datos exactos.`;}
+function updSnap(){const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);$('ai-snap').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">${[['Período',getPL(periodo),'var(--gr)'],['Facturación',fmt(tF),'var(--gr)'],['Gastos',fmt(tG),'var(--re)'],['Neta',fmt(tF-tG),(tF-tG)>=0?'var(--gr)':'var(--re)'],['Margen',tF>0?fmtP(((tF-tG)/tF)*100):'—','var(--ye)'],['Modelos',MODS.length,'var(--t2)'],['Empleados',EQ.empleados.length,'var(--t2)']].map(([l,v,c])=>`<div style="font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)">${l}</div><div style="font-size:11px;font-weight:600;color:${c}">${v}</div>`).join('')}</div>`;}
+function updAlerts(){const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);const al=[];if(!fac.length)al.push({i:'i',m:'Sin facturación en este período.'});if(tG>tF&&tF>0)al.push({i:'!',m:'Los gastos superan la facturación.'});if(tF>0&&tG/tF>.7)al.push({i:'!',m:'Ratio gastos/facturación mayor al 70%.'});if(!MODS.length)al.push({i:'i',m:'No hay modelos configuradas. Andá a Modelos.'});if(!EQ.empleados.length)al.push({i:'i',m:'No hay empleados configurados. Andá a Equipo.'});$('ai-alr').innerHTML=al.length?al.map(a=>`<div style="display:flex;gap:6px;padding:6px 0;border-bottom:1px solid var(--br);align-items:flex-start"><span style="flex-shrink:0;font-weight:700;color:var(--ye)">${a.i}</span><span style="font-size:10px;color:var(--t2);line-height:1.6">${a.m}</span></div>`).join(''):'<div style="font-size:10px;color:var(--gr);padding:6px 0">Sin alertas.</div>';}
+async function sendAI(){const inp=$('ai-in');const msg=inp.value.trim();if(!msg)return;inp.value='';appAI('u',msg);aiHist.push({role:'user',content:msg});const tid='t'+Date.now(),msgs=$('ams');const d=document.createElement('div');d.className='am a';d.id=tid;d.innerHTML='<div class="aav">AI</div><div class="amb"><div class="atyp"><span></span><span></span><span></span></div></div>';msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildCtx(),messages:aiHist})});const dt=await r.json();$(tid)?.remove();const rp=dt.content?.[0]?.text||'Sin respuesta.';aiHist.push({role:'assistant',content:rp});appAI('a',rp);}catch(e){$(tid)?.remove();appAI('a','Error de conexión.');}}
+function appAI(role,text){const msgs=$('ams'),d=document.createElement('div');d.className='am '+role;d.innerHTML=`<div class="aav">${role==='u'?'TU':'AI'}</div><div class="amb">${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>`;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
 function useSug(el){$('ai-in').value=el.textContent;sendAI();}
 function clrChat(){aiHist=[];$('ams').innerHTML='<div class="am a"><div class="aav">AI</div><div class="amb">Chat reiniciado.</div></div>';}
 
@@ -2031,264 +1611,120 @@ function clrChat(){aiHist=[];$('ams').innerHTML='<div class="am a"><div class="a
 // MODELOS
 // ═══════════════════════════════════════════════════
 function rModelos(){
-  // nichos list
-  $('nichos-list').innerHTML=NICHOS.map(n=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px">${n}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delNicho('${n}')">×</span></div>`).join('');
-  // populate nicho selects
+  $('nichos-list').innerHTML=NICHOS.map(n=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px">${n}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delNicho('${n}')">x</span></div>`).join('');
   const mn=$('mod-nicho');if(mn)mn.innerHTML='<option value="">— Nicho —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');
-  // populate teams select simple en nueva modelo
-  const mt=$('mod-teams');
-  if(mt){mt.innerHTML='<option value="">— Sin team —</option>'+EQ.teams.map(t=>`<option value="${t}">${t}</option>`).join('');}
-  // grid modelos
+  const mt=$('mod-teams');if(mt){mt.innerHTML='<option value="">— Sin team —</option>'+EQ.teams.map(t=>`<option value="${t}">${t}</option>`).join('');}
   const g=$('mods-grid');
-  g.innerHTML=MODS.length?MODS.map(m=>{
-    let cHtml='';
-    if(m.tipo==='fijo'){
-      cHtml=`<span style="color:var(--gr);font-weight:700;font-size:13px">${m.pct}%</span> fijo ${m.pct>=50?'<span class="badge-p">PAGA GASTOS</span>':'<span class="badge-np">NO PAGA</span>'}`;
-    } else {
-      let prev=0;
-      cHtml='<div style="font-size:9px;color:var(--t3);margin-bottom:3px">ESCALONADO</div>'+(m.tramos||[]).map(t=>{
-        const h=parseFloat(t.hasta)||Infinity;
-        const l=`<div style="font-size:10px;color:var(--t2)">${fmt(prev)} → ${h===Infinity?'∞':fmt(h)}: <span style="color:var(--gr)">${t.pct}%</span>${parseFloat(t.pct)>=50?' <span class="badge-p" style="font-size:7px">PAGA GAS</span>':''}</div>`;
-        prev=h;return l;
-      }).join('');
-    }
-    return `<div style="background:var(--s2);border:1px solid var(--br);border-radius:6px;padding:12px 14px">
-      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px">${m.nom}</div>
-      <div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">${m.nicho||'Sin nicho'} · ${m.tipo}</div>
-      <div style="margin-bottom:8px">${cHtml}</div>
-      <div style="font-size:9px;color:var(--t3)">Team: ${m.team||'—'}</div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <button class="btn bg bs" onclick="openMod('${m.id}')">Editar</button>
-        <button class="btn bd2 bs" onclick="delMod('${m.id}')">Eliminar</button>
-      </div>
-    </div>`;
-  }).join(''):'<div class="emp" style="grid-column:span 3">No hay modelos. Agregá la primera arriba.</div>';
+  g.innerHTML=MODS.length?MODS.map(m=>{let cHtml='';if(m.tipo==='fijo'){cHtml=`<span style="color:var(--gr);font-weight:700;font-size:13px">${m.pct}%</span> fijo ${m.pct>=50?'<span class="badge-p">PAGA GASTOS</span>':'<span class="badge-np">NO PAGA</span>'}`;}else{let prev=0;cHtml='<div style="font-size:9px;color:var(--t3);margin-bottom:3px">ESCALONADO</div>'+(m.tramos||[]).map(t=>{const h=parseFloat(t.hasta)||Infinity;const l=`<div style="font-size:10px;color:var(--t2)">${fmt(prev)} → ${h===Infinity?'∞':fmt(h)}: <span style="color:var(--gr)">${t.pct}%</span>${parseFloat(t.pct)>=50?' <span class="badge-p" style="font-size:7px">PAGA GAS</span>':''}</div>`;prev=h;return l;}).join('');}return`<div style="background:var(--s2);border:1px solid var(--br);border-radius:6px;padding:12px 14px"><div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px">${m.nom}</div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">${m.nicho||'Sin nicho'} · ${m.tipo}</div><div style="margin-bottom:8px">${cHtml}</div><div style="font-size:9px;color:var(--t3)">Team: ${m.team||'—'}</div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn bg bs" onclick="openMod('${m.id}')">Editar</button><button class="btn bd2 bs" onclick="delMod('${m.id}')">Eliminar</button></div></div>`;}).join(''):'<div class="emp" style="grid-column:span 3">No hay modelos. Agregá la primera arriba.</div>';
 }
-async function addNicho(){
-  const v=$('nicho-inp').value.trim();
-  if(!v){notif('Ingresá un nombre','er');return;}
-  if(NICHOS.includes(v)){notif('Ya existe','er');return;}
-  NICHOS.push(v);await sNI();$('nicho-inp').value='';rModelos();notif('Nicho agregado ✓');
-}
+async function addNicho(){const v=$('nicho-inp').value.trim();if(!v){notif('Ingresá un nombre','er');return;}if(NICHOS.includes(v)){notif('Ya existe','er');return;}NICHOS.push(v);await sNI();$('nicho-inp').value='';rModelos();notif('Nicho agregado');}
 async function delNicho(n){NICHOS=NICHOS.filter(x=>x!==n);await sNI();rModelos();}
-function updModTipo(){
-  const t=$('mod-tipo').value;
-  $('mod-pct-w').style.display=t==='fijo'?'flex':'none';
-  $('mod-tramos-w').style.display=t==='escalonado'?'block':'none';
-  if(t==='escalonado'&&$('mod-tramos').children.length===0)addTrm('mod-tramos');
-}
-function addTrm(listId){
-  const list=$(listId);
-  const div=document.createElement('div');div.className='trow';
-  div.innerHTML=`<span style="font-size:9px;color:var(--t3)">hasta</span>
-    <input type="number" class="tr-h" placeholder="0 = ∞" min="0" step="100">
-    <span style="font-size:9px;color:var(--t3)">→</span>
-    <input type="number" class="tr-p" placeholder="%" min="0" max="100" step="1" style="width:70px">
-    <span style="font-size:9px;color:var(--t3)">%</span>
-    <button class="btn bd2 bs" onclick="this.closest('.trow').remove()">×</button>`;
-  list.appendChild(div);
-}
-function getTrms(listId){
-  return Array.from($(listId).querySelectorAll('.trow')).map(r=>({hasta:parseFloat(r.querySelector('.tr-h').value)||0,pct:parseFloat(r.querySelector('.tr-p').value)||0}));
-}
-async function addMod(){
-  const nom=$('mod-nom').value.trim(),tipo=$('mod-tipo').value,nicho=$('mod-nicho').value;
-  if(!nom){notif('Nombre requerido','er');return;}
-  const team=$('mod-teams').value;
-  let obj={id:uid(),nom,nicho,tipo,team,teams:team?[team]:[]};
-  if(tipo==='fijo'){obj.pct=parseFloat($('mod-pct').value)||0;}
-  else{obj.tramos=getTrms('mod-tramos');if(!obj.tramos.length){notif('Agregá tramos','er');return;}}
-  MODS.push(obj);await sMD();$('mod-nom').value='';$('mod-pct').value='';$('mod-tramos').innerHTML='';
-  rModelos();notif('Modelo guardada ✓');
-}
+function updModTipo(){const t=$('mod-tipo').value;$('mod-pct-w').style.display=t==='fijo'?'flex':'none';$('mod-tramos-w').style.display=t==='escalonado'?'block':'none';if(t==='escalonado'&&$('mod-tramos').children.length===0)addTrm('mod-tramos');}
+function addTrm(listId){const list=$(listId);const div=document.createElement('div');div.className='trow';div.innerHTML=`<span style="font-size:9px;color:var(--t3)">hasta</span><input type="number" class="tr-h" placeholder="0 = inf" min="0" step="100"><span style="font-size:9px;color:var(--t3)">→</span><input type="number" class="tr-p" placeholder="%" min="0" max="100" step="1" style="width:70px"><span style="font-size:9px;color:var(--t3)">%</span><button class="btn bd2 bs" onclick="this.closest('.trow').remove()">x</button>`;list.appendChild(div);}
+function getTrms(listId){return Array.from($(listId).querySelectorAll('.trow')).map(r=>({hasta:parseFloat(r.querySelector('.tr-h').value)||0,pct:parseFloat(r.querySelector('.tr-p').value)||0}));}
+async function addMod(){const nom=$('mod-nom').value.trim(),tipo=$('mod-tipo').value,nicho=$('mod-nicho').value;if(!nom){notif('Nombre requerido','er');return;}const team=$('mod-teams').value;let obj={id:uid(),nom,nicho,tipo,team,teams:team?[team]:[]};if(tipo==='fijo'){obj.pct=parseFloat($('mod-pct').value)||0;}else{obj.tramos=getTrms('mod-tramos');if(!obj.tramos.length){notif('Agregá tramos','er');return;}}MODS.push(obj);await sMD();$('mod-nom').value='';$('mod-pct').value='';$('mod-tramos').innerHTML='';rModelos();notif('Modelo guardada');}
 async function delMod(id){MODS=MODS.filter(x=>x.id!==id);await sMD_del(id);rModelos();}
-function openMod(id){
-  const m=MODS.find(x=>x.id===id);if(!m)return;
-  $('me-id').value=id;$('me-nom').value=m.nom;$('me-tipo').value=m.tipo;
-  // teams select simple
-  const mt=$('me-teams');
-  mt.innerHTML='<option value="">— Sin team —</option>'+EQ.teams.map(t=>`<option value="${t}"${(m.team===t||(m.teams||[]).includes(t))?' selected':''}>${t}</option>`).join('');
-  $('me-nicho').innerHTML='<option value="">— Nicho —</option>'+NICHOS.map(n=>`<option${m.nicho===n?' selected':''}>${n}</option>`).join('');
-  $('me-fijo-w').style.display=m.tipo==='fijo'?'block':'none';
-  $('me-tramos-w').style.display=m.tipo==='escalonado'?'block':'none';
-  $('me-pct').value=m.pct||'';
-  $('me-tramos').innerHTML='';
-  (m.tramos||[]).forEach(t=>{addTrm('me-tramos');const rows=$('me-tramos').querySelectorAll('.trow');const last=rows[rows.length-1];last.querySelector('.tr-h').value=t.hasta||'';last.querySelector('.tr-p').value=t.pct||'';});
-  $('mod-modal').classList.add('on');
-}
-function updMeTipo(){
-  const t=$('me-tipo').value;
-  $('me-fijo-w').style.display=t==='fijo'?'block':'none';
-  $('me-tramos-w').style.display=t==='escalonado'?'block':'none';
-}
-async function saveMe(){
-  const id=$('me-id').value,idx=MODS.findIndex(x=>x.id===id);if(idx<0)return;
-  const tipo=$('me-tipo').value;
-  const team=$('me-teams').value;
-  MODS[idx]={...MODS[idx],nom:$('me-nom').value.trim(),nicho:$('me-nicho').value,tipo,team,teams:team?[team]:[]};
-  if(tipo==='fijo')MODS[idx].pct=parseFloat($('me-pct').value)||0;
-  else MODS[idx].tramos=getTrms('me-tramos');
-  await sMD();clsMod();rModelos();notif('Actualizado ✓');
-}
+function openMod(id){const m=MODS.find(x=>x.id===id);if(!m)return;$('me-id').value=id;$('me-nom').value=m.nom;$('me-tipo').value=m.tipo;const mt=$('me-teams');mt.innerHTML='<option value="">— Sin team —</option>'+EQ.teams.map(t=>`<option value="${t}"${(m.team===t||(m.teams||[]).includes(t))?' selected':''}>${t}</option>`).join('');$('me-nicho').innerHTML='<option value="">— Nicho —</option>'+NICHOS.map(n=>`<option${m.nicho===n?' selected':''}>${n}</option>`).join('');$('me-fijo-w').style.display=m.tipo==='fijo'?'block':'none';$('me-tramos-w').style.display=m.tipo==='escalonado'?'block':'none';$('me-pct').value=m.pct||'';$('me-tramos').innerHTML='';(m.tramos||[]).forEach(t=>{addTrm('me-tramos');const rows=$('me-tramos').querySelectorAll('.trow');const last=rows[rows.length-1];last.querySelector('.tr-h').value=t.hasta||'';last.querySelector('.tr-p').value=t.pct||'';});$('mod-modal').classList.add('on');}
+function updMeTipo(){const t=$('me-tipo').value;$('me-fijo-w').style.display=t==='fijo'?'block':'none';$('me-tramos-w').style.display=t==='escalonado'?'block':'none';}
+async function saveMe(){const id=$('me-id').value,idx=MODS.findIndex(x=>x.id===id);if(idx<0)return;const tipo=$('me-tipo').value;const team=$('me-teams').value;MODS[idx]={...MODS[idx],nom:$('me-nom').value.trim(),nicho:$('me-nicho').value,tipo,team,teams:team?[team]:[]};if(tipo==='fijo')MODS[idx].pct=parseFloat($('me-pct').value)||0;else MODS[idx].tramos=getTrms('me-tramos');await sMD();clsMod();rModelos();notif('Actualizado');}
 function clsMod(){$('mod-modal').classList.remove('on');}
 
 // ═══════════════════════════════════════════════════
-// EQUIPO
+// EQUIPO — con pago por hora
 // ═══════════════════════════════════════════════════
-// ─── helpers para puestos (ahora son objetos {nom, area}) ───
-function getPuestoNoms(areaFlt){
-  const all=EQ.puestos||[];
-  // compatibilidad: si algún puesto es string (datos viejos), convertir
-  const norm=all.map(p=>typeof p==='string'?{nom:p,area:''}:p);
-  return areaFlt?norm.filter(p=>p.area===areaFlt):norm;
-}
-
+function getPuestoNoms(areaFlt){const all=EQ.puestos||[];const norm=all.map(p=>typeof p==='string'?{nom:p,area:''}:p);return areaFlt?norm.filter(p=>p.area===areaFlt):norm;}
 function rEquipo(){
-  rAreas();
-  rPuestos();
-  const ea=$('emp-area');
-  if(ea)ea.innerHTML='<option value="">— Seleccionar —</option>'+AREAS.map(a=>`<option>${a}</option>`).join('');
-  $('teams-list').innerHTML=EQ.teams.map(t=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px">${t}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delTeam('${t}')">×</span></div>`).join('');
+  rAreas();rPuestos();
+  const ea=$('emp-area');if(ea)ea.innerHTML='<option value="">— Seleccionar —</option>'+AREAS.map(a=>`<option>${a}</option>`).join('');
+  $('teams-list').innerHTML=EQ.teams.map(t=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px">${t}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delTeam('${t}')">x</span></div>`).join('');
   const et=$('emp-team');if(et)et.innerHTML='<option value="">— Seleccionar —</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
   const esm=$('emp-sal-mods');if(esm)esm.innerHTML=MODS.map(m=>`<option value="${m.nom}">${m.nom} (${m.nicho||'—'})</option>`).join('');
   renderEmpTb();
 }
-
 function rAreas(){
-  const al=$('areas-list');
-  if(!al)return;
-  // chips fijos, no eliminables
+  const al=$('areas-list');if(!al)return;
   al.innerHTML=AREAS.map(a=>`<div style="background:var(--gd);border:1px solid rgba(46,125,50,.2);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;color:var(--gr);font-family:var(--sa)">${a}</div>`).join('');
-  // actualizar select filtro de puestos
-  const paf=$('puesto-area-flt');
-  if(paf)paf.innerHTML='<option value="">Todas las áreas</option>'+AREAS.map(a=>`<option>${a}</option>`).join('');
-  // actualizar select de área en nuevo puesto
-  const pas=$('puesto-area-sel');
-  if(pas)pas.innerHTML='<option value="">— Sin área —</option>'+AREAS.map(a=>`<option>${a}</option>`).join('');
-  // filtros de tabla empleados
-  const efa=$('emp-flt-area');
-  if(efa)efa.innerHTML='<option value="">Todas las áreas</option>'+AREAS.map(a=>`<option>${a}</option>`).join('');
-  const efp=$('emp-flt-puesto');
-  if(efp){const pNoms=[...new Set((EQ.puestos||[]).map(p=>typeof p==='string'?p:p.nom))];
-    efp.innerHTML='<option value="">Todos los puestos</option>'+pNoms.map(p=>`<option>${p}</option>`).join('');}
-  const eft=$('emp-flt-team');
-  if(eft)eft.innerHTML='<option value="">Todos los teams</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
+  const paf=$('puesto-area-flt');if(paf)paf.innerHTML='<option value="">Todas las áreas</option>'+AREAS.map(a=>`<option>${a}</option>`).join('');
+  const pas=$('puesto-area-sel');if(pas)pas.innerHTML='<option value="">— Sin área —</option>'+AREAS.map(a=>`<option>${a}</option>`).join('');
+  const efa=$('emp-flt-area');if(efa)efa.innerHTML='<option value="">Todas las áreas</option>'+AREAS.map(a=>`<option>${a}</option>`).join('');
+  const efp=$('emp-flt-puesto');if(efp){const pNoms=[...new Set((EQ.puestos||[]).map(p=>typeof p==='string'?p:p.nom))];efp.innerHTML='<option value="">Todos los puestos</option>'+pNoms.map(p=>`<option>${p}</option>`).join('');}
+  const eft=$('emp-flt-team');if(eft)eft.innerHTML='<option value="">Todos los teams</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
 }
-
-function rPuestos(){
-  const flt=$('puesto-area-flt')?.value||'';
-  const lista=getPuestoNoms(flt||'');
-  $('puestos-list').innerHTML=lista.map(p=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px"><span style="font-size:10px;font-weight:700;color:var(--gr)">${p.area||''}</span><span style="color:var(--br)">·</span>${p.nom}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delPuesto('${p.nom}')">×</span></div>`).join('');
-}
-
+function rPuestos(){const flt=$('puesto-area-flt')?.value||'';const lista=getPuestoNoms(flt||'');$('puestos-list').innerHTML=lista.map(p=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px"><span style="font-size:10px;font-weight:700;color:var(--gr)">${p.area||''}</span><span style="color:var(--br)">·</span>${p.nom}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delPuesto('${p.nom}')">x</span></div>`).join('');}
 function renderEmpTb(){
-  const fa=$('emp-flt-area')?.value||'';
-  const fp=$('emp-flt-puesto')?.value||'';
-  const ft=$('emp-flt-team')?.value||'';
-  const fn=($('emp-flt-nom')?.value||'').toLowerCase().trim();
-  let data=EQ.empleados.slice();
-  if(fa)data=data.filter(e=>e.area===fa);
-  if(fp)data=data.filter(e=>e.puesto===fp);
-  if(ft)data=data.filter(e=>e.team===ft);
-  if(fn)data=data.filter(e=>e.nom.toLowerCase().includes(fn));
-  const stLbl={fijo:'Fijo','pct-total':'% Total','pct-modelos':'% Modelos','pct-techo':'% c/techo'};
+  const fa=$('emp-flt-area')?.value||'',fp=$('emp-flt-puesto')?.value||'',ft=$('emp-flt-team')?.value||'',fn=($('emp-flt-nom')?.value||'').toLowerCase().trim();
+  let data=EQ.empleados.slice();if(fa)data=data.filter(e=>e.area===fa);if(fp)data=data.filter(e=>e.puesto===fp);if(ft)data=data.filter(e=>e.team===ft);if(fn)data=data.filter(e=>e.nom.toLowerCase().includes(fn));
+  const stLbl={fijo:'Fijo','por-hora':'Por hora','pct-total':'% Total','pct-modelos':'% Modelos','pct-techo':'% c/techo'};
   $('emp-tb').innerHTML=data.length?data.map(e=>{
-    const det=e.salTipo==='fijo'?`${fmt(e.salFijo||0)}/mes`:e.salTipo==='pct-total'?`${e.salPct}% del total`:e.salTipo==='pct-modelos'?`${e.salPct}% de: ${e.salMods||'todas'}`:e.salTipo==='pct-techo'?`${e.salPct}% (techo $${(e.salTecho||0).toLocaleString()}) de: ${e.salMods||'total'}`:e.salTipo;
-    return `<tr><td class="b">${e.nom}</td>
-      <td><span class="tag tgr">${e.area||'—'}</span></td>
-      <td><span class="tag ${e.puesto==='Team Leader'?'ty':e.puesto==='Chatter'?'tb':'tp'}">${e.puesto}</span></td>
-      <td>${e.team||'—'}</td>
-      <td><span class="tag tgr">${stLbl[e.salTipo||'fijo']}</span></td>
-      <td style="font-size:10px;color:var(--t2)">${det}</td>
-      <td><div style="display:flex;gap:5px"><button class="btn bg bs" onclick="openEmp('${e.id}')">Editar</button><button class="btn bd2 bs" onclick="delEmp('${e.id}')">×</button></div></td>
-    </tr>`;
+    let det='';
+    if(e.salTipo==='fijo')det=`${fmt(e.salFijo||0)}/mes`;
+    else if(e.salTipo==='por-hora')det=`$${e.salHora||2}/hora`;
+    else if(e.salTipo==='pct-total')det=`${e.salPct}% del total`;
+    else if(e.salTipo==='pct-modelos')det=`${e.salPct}% de: ${e.salMods||'todas'}`;
+    else if(e.salTipo==='pct-techo')det=`${e.salPct}% (techo $${(e.salTecho||0).toLocaleString()}) de: ${e.salMods||'total'}`;
+    return`<tr><td class="b">${e.nom}</td><td><span class="tag tgr">${e.area||'—'}</span></td><td><span class="tag ${e.puesto==='Team Leader'?'ty':e.puesto==='Chatter'?'tb':'tp'}">${e.puesto}</span></td><td>${e.team||'—'}</td><td><span class="tag tgr">${stLbl[e.salTipo||'fijo']}</span></td><td style="font-size:10px;color:var(--t2)">${det}</td><td><div style="display:flex;gap:5px"><button class="btn bg bs" onclick="openEmp('${e.id}')">Editar</button><button class="btn bd2 bs" onclick="delEmp('${e.id}')">x</button></div></td></tr>`;
   }).join(''):`<tr><td colspan="7" class="emp">Sin empleados${fa||fp||ft||fn?' con estos filtros':''}</td></tr>`;
 }
-
-async function addPuesto(){
-  const nom=$('puesto-inp').value.trim();
-  const area=$('puesto-area-sel').value;
-  if(!nom){notif('Ingresá el nombre del puesto','er');return;}
-  const puestos=EQ.puestos||[];
-  const norm=puestos.map(p=>typeof p==='string'?{nom:p,area:''}:p);
-  if(norm.find(p=>p.nom===nom)){notif('Ya existe','er');return;}
-  norm.push({nom,area});
-  EQ.puestos=norm;await sEQ_puestos();$('puesto-inp').value='';rEquipo();notif('Puesto agregado ✓');
-}
-async function delPuesto(n){
-  const norm=(EQ.puestos||[]).map(p=>typeof p==='string'?{nom:p,area:''}:p);
-  EQ.puestos=norm.filter(p=>p.nom!==n);await sEQ_puestos();rEquipo();
-}
-async function addTeam(){const v=$('team-inp').value.trim();if(!v)return;if(!EQ.teams.includes(v))EQ.teams.push(v);await sEQ_teams();$('team-inp').value='';rEquipo();notif('Team agregado ✓');}
+async function addPuesto(){const nom=$('puesto-inp').value.trim(),area=$('puesto-area-sel').value;if(!nom){notif('Ingresá el nombre del puesto','er');return;}const puestos=EQ.puestos||[];const norm=puestos.map(p=>typeof p==='string'?{nom:p,area:''}:p);if(norm.find(p=>p.nom===nom)){notif('Ya existe','er');return;}norm.push({nom,area});EQ.puestos=norm;await sEQ_puestos();$('puesto-inp').value='';rEquipo();notif('Puesto agregado');}
+async function delPuesto(n){const norm=(EQ.puestos||[]).map(p=>typeof p==='string'?{nom:p,area:''}:p);EQ.puestos=norm.filter(p=>p.nom!==n);await sEQ_puestos();rEquipo();}
+async function addTeam(){const v=$('team-inp').value.trim();if(!v)return;if(!EQ.teams.includes(v))EQ.teams.push(v);await sEQ_teams();$('team-inp').value='';rEquipo();notif('Team agregado');}
 async function delTeam(t){EQ.teams=EQ.teams.filter(x=>x!==t);await sEQ_teams();rEquipo();}
-function updEmpArea(){
-  const area=$('emp-area').value;
-  const puestos=getPuestoNoms(area);
-  $('emp-puesto').innerHTML='<option value="">— Puesto —</option>'+puestos.map(p=>`<option value="${p.nom}">${p.nom}</option>`).join('');
-  $('emp-team-w').style.display='none';
-}
-function updEmpPuesto(){
-  const p=$('emp-puesto').value;
-  $('emp-team-w').style.display=p==='Chatter'?'flex':'none';
-}
+function updEmpArea(){const area=$('emp-area').value;const puestos=getPuestoNoms(area);$('emp-puesto').innerHTML='<option value="">— Puesto —</option>'+puestos.map(p=>`<option value="${p.nom}">${p.nom}</option>`).join('');$('emp-team-w').style.display='none';}
+function updEmpPuesto(){const p=$('emp-puesto').value;$('emp-team-w').style.display=p==='Chatter'?'flex':'none';}
 function updEmpSal(){
   const t=$('emp-sal-tipo').value;
   $('emp-sal-fijo-w').style.display=t==='fijo'?'flex':'none';
-  $('emp-sal-pct-w').style.display=t!=='fijo'?'flex':'none';
+  $('emp-sal-hora-w').style.display=t==='por-hora'?'flex':'none';
+  $('emp-sal-pct-w').style.display=(t==='pct-total'||t==='pct-modelos'||t==='pct-techo')?'flex':'none';
   $('emp-sal-techo-w').style.display=t==='pct-techo'?'flex':'none';
   $('emp-sal-mods-w').style.display=(t==='pct-modelos'||t==='pct-techo')?'flex':'none';
 }
 async function addEmp(){
-  const nom=$('emp-nom').value.trim(),puesto=$('emp-puesto').value;
-  const area=$('emp-area').value;
+  const nom=$('emp-nom').value.trim(),puesto=$('emp-puesto').value,area=$('emp-area').value;
   if(!nom||!puesto){notif('Nombre y puesto requeridos','er');return;}
   const st=$('emp-sal-tipo').value;
-  const modsSel=$('emp-sal-mods');
-  const salMods=modsSel?Array.from(modsSel.selectedOptions).map(o=>o.value).join(','):'';
-  const emp={id:uid(),nom,area,puesto,team:$('emp-team').value,salTipo:st,salFijo:parseFloat($('emp-sal-fijo').value||0),salPct:parseFloat($('emp-sal-pct').value||0),salTecho:parseFloat($('emp-sal-techo').value||0),salMods};
+  const modsSel=$('emp-sal-mods');const salMods=modsSel?Array.from(modsSel.selectedOptions).map(o=>o.value).join(','):'';
+  const salHora=parseFloat($('emp-sal-hora')?.value||2);
+  const emp={id:uid(),nom,area,puesto,team:$('emp-team').value,salTipo:st,salFijo:parseFloat($('emp-sal-fijo').value||0),salHora,salPct:parseFloat($('emp-sal-pct').value||0),salTecho:parseFloat($('emp-sal-techo').value||0),salMods};
   EQ.empleados.push(emp);await sEQ();
   $('emp-nom').value='';$('emp-sal-fijo').value='';$('emp-sal-pct').value='';$('emp-sal-techo').value='';
+  if($('emp-sal-hora'))$('emp-sal-hora').value='';
   if(modsSel)Array.from(modsSel.options).forEach(o=>o.selected=false);
-  rEquipo();notif('Empleado guardado ✓');
+  rEquipo();notif('Empleado guardado');
 }
 async function delEmp(id){EQ.empleados=EQ.empleados.filter(x=>x.id!==id);await sEQ_del(id);rEquipo();}
 function openEmp(id){
   const e=EQ.empleados.find(x=>x.id===id);if(!e)return;
   $('ee-id').value=id;$('ee-nom').value=e.nom;
-  // área
-  $('ee-area').innerHTML='<option value="">—</option>'+AREAS.map(a=>`<option${(e.area===a)?' selected':''}>${a}</option>`).join('');
-  // puestos filtrados por área del empleado
+  $('ee-area').innerHTML='<option value="">—</option>'+AREAS.map(a=>`<option${e.area===a?' selected':''}>${a}</option>`).join('');
   const puestosFiltrados=getPuestoNoms(e.area||'');
   $('ee-puesto').innerHTML='<option value="">—</option>'+puestosFiltrados.map(p=>`<option value="${p.nom}"${e.puesto===p.nom?' selected':''}>${p.nom}</option>`).join('');
   $('ee-team').innerHTML='<option value="">—</option>'+EQ.teams.map(t=>`<option${e.team===t?' selected':''}>${t}</option>`).join('');
   $('ee-team-w').style.display=e.puesto==='Chatter'?'flex':'none';
   $('ee-sal-tipo').value=e.salTipo||'fijo';updEeSal();
-  $('ee-fijo').value=e.salFijo||'';$('ee-pct').value=e.salPct||'';$('ee-techo').value=e.salTecho||'';
-  const eeMods=$('ee-mods');
-  const selMods=(e.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
+  $('ee-fijo').value=e.salFijo||'';
+  if($('ee-hora'))$('ee-hora').value=e.salHora||2;
+  $('ee-pct').value=e.salPct||'';$('ee-techo').value=e.salTecho||'';
+  const eeMods=$('ee-mods');const selMods=(e.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
   if(eeMods)eeMods.innerHTML=MODS.map(m=>`<option value="${m.nom}"${selMods.includes(m.nom)?' selected':''}>${m.nom} (${m.nicho||'—'})</option>`).join('');
   $('emp-modal').classList.add('on');
 }
-function updEeArea(){
-  const area=$('ee-area').value;
-  const puestos=getPuestoNoms(area);
-  $('ee-puesto').innerHTML='<option value="">—</option>'+puestos.map(p=>`<option value="${p.nom}">${p.nom}</option>`).join('');
-  $('ee-team-w').style.display='none';
-}
+function updEeArea(){const area=$('ee-area').value;const puestos=getPuestoNoms(area);$('ee-puesto').innerHTML='<option value="">—</option>'+puestos.map(p=>`<option value="${p.nom}">${p.nom}</option>`).join('');$('ee-team-w').style.display='none';}
 function updEePuesto(){const p=$('ee-puesto').value;$('ee-team-w').style.display=p==='Chatter'?'flex':'none';}
 function updEeSal(){
   const t=$('ee-sal-tipo').value;
   $('ee-fijo-w').style.display=t==='fijo'?'flex':'none';
-  $('ee-pct-w').style.display=t!=='fijo'?'flex':'none';
+  $('ee-hora-w').style.display=t==='por-hora'?'flex':'none';
+  $('ee-pct-w').style.display=(t==='pct-total'||t==='pct-modelos'||t==='pct-techo')?'flex':'none';
   $('ee-techo-w').style.display=t==='pct-techo'?'flex':'none';
   $('ee-mods-w').style.display=(t==='pct-modelos'||t==='pct-techo')?'flex':'none';
 }
 async function saveEe(){
   const id=$('ee-id').value,idx=EQ.empleados.findIndex(x=>x.id===id);if(idx<0)return;
-  const eeMods=$('ee-mods');
-  const salMods=eeMods?Array.from(eeMods.selectedOptions).map(o=>o.value).join(','):'';
-  EQ.empleados[idx]={...EQ.empleados[idx],nom:$('ee-nom').value.trim(),area:$('ee-area').value,puesto:$('ee-puesto').value,team:$('ee-team').value,salTipo:$('ee-sal-tipo').value,salFijo:parseFloat($('ee-fijo').value||0),salPct:parseFloat($('ee-pct').value||0),salTecho:parseFloat($('ee-techo').value||0),salMods};
-  await sEQ();clsEmpMod();rEquipo();notif('Actualizado ✓');
+  const eeMods=$('ee-mods');const salMods=eeMods?Array.from(eeMods.selectedOptions).map(o=>o.value).join(','):'';
+  const salHora=parseFloat($('ee-hora')?.value||2);
+  EQ.empleados[idx]={...EQ.empleados[idx],nom:$('ee-nom').value.trim(),area:$('ee-area').value,puesto:$('ee-puesto').value,team:$('ee-team').value,salTipo:$('ee-sal-tipo').value,salFijo:parseFloat($('ee-fijo').value||0),salHora,salPct:parseFloat($('ee-pct').value||0),salTecho:parseFloat($('ee-techo').value||0),salMods};
+  await sEQ();clsEmpMod();rEquipo();notif('Actualizado');
 }
 function clsEmpMod(){$('emp-modal').classList.remove('on');}
 
@@ -2296,280 +1732,77 @@ function clsEmpMod(){$('emp-modal').classList.remove('on');}
 // CONFIG
 // ═══════════════════════════════════════════════════
 function rCfg(){
-  $('cfg-meta').value=OBJ.meta;$('cfg-anio').value=OBJ.anio;
-  rCfgUsers();
-  $('cfg-formulas').innerHTML=EQ.empleados.map(e=>{
-    const stDesc={fijo:`Fijo ${fmt(e.salFijo||0)}/mes`,'pct-total':`${e.salPct}% del total facturado`,'pct-modelos':`${e.salPct}% de: ${e.salMods||'todas las modelos'}`,'pct-techo':`${e.salPct}% con techo $${(e.salTecho||0).toLocaleString()} de: ${e.salMods||'facturación total'}`};
-    return `<div style="padding:5px 0;border-bottom:1px solid var(--br);display:flex;justify-content:space-between"><span style="color:var(--tx)">${e.nom} <span style="font-size:9px;color:var(--t3)">(${e.puesto})</span></span><span style="font-size:10px;color:var(--t2)">${stDesc[e.salTipo||'fijo']}</span></div>`;
-  }).join('')||'<div style="color:var(--t3);font-size:10px">Sin empleados configurados</div>';
+  $('cfg-meta').value=OBJ.meta;$('cfg-anio').value=OBJ.anio;rCfgUsers();
+  const stDesc={fijo:'Fijo mensual','por-hora':'Por hora','pct-total':'% del total facturado','pct-modelos':'% de modelos específicas','pct-techo':'% con techo'};
+  $('cfg-formulas').innerHTML=EQ.empleados.map(e=>`<div style="padding:5px 0;border-bottom:1px solid var(--br);display:flex;justify-content:space-between"><span style="color:var(--tx)">${e.nom} <span style="font-size:9px;color:var(--t3)">(${e.puesto})</span></span><span style="font-size:10px;color:var(--t2)">${stDesc[e.salTipo||'fijo']}${e.salTipo==='por-hora'?' @ $'+(e.salHora||2)+'/h':''}</span></div>`).join('')||'<div style="color:var(--t3);font-size:10px">Sin empleados configurados</div>';
 }
-async function saveCfg(){OBJ.meta=parseFloat($('cfg-meta').value)||100000;OBJ.anio=parseInt($('cfg-anio').value)||2026;await sOJ();notif('Config guardada ✓');}
+async function saveCfg(){OBJ.meta=parseFloat($('cfg-meta').value)||100000;OBJ.anio=parseInt($('cfg-anio').value)||2026;await sOJ();notif('Config guardada');}
 
 // ═══════════════════════════════════════════════════
-// AGENTE DE CARGA — tool_use con Anthropic API
+// AGENTE DE CARGA
 // ═══════════════════════════════════════════════════
-let agHist=[], agPendingActions=[], agRecentLog=[];
-
+let agHist=[],agPendingActions=[],agRecentLog=[];
 const AG_TOOLS=[
-  {name:'registrar_ingreso',description:'Registra uno o múltiples ingresos de modelos. Usá cuando el usuario quiera cargar facturación de una o varias modelos.',
-    input_schema:{type:'object',properties:{registros:{type:'array',description:'Lista de ingresos',items:{type:'object',properties:{
-      modelo:{type:'string',description:'Nombre exacto del modelo'},
-      monto:{type:'number',description:'Monto USD'},
-      tipo:{type:'string',enum:['Chatting','Suscripción'],description:'Tipo de ingreso'},
-      mes:{type:'string',description:'Formato YYYY-MM ej: 2026-03'},
-      notas:{type:'string'}
-    },required:['modelo','monto','tipo','mes']}}},required:['registros']}
-  },
-  {name:'registrar_gasto',description:'Registra uno o múltiples gastos. Usá para salarios, suscripciones u otros egresos.',
-    input_schema:{type:'object',properties:{registros:{type:'array',description:'Lista de gastos',items:{type:'object',properties:{
-      descripcion:{type:'string'},monto:{type:'number'},categoria:{type:'string',description:'Categoría del gasto'},
-      empleado:{type:'string'},modelo_asociado:{type:'string'},fecha:{type:'string',description:'YYYY-MM-DD'},notas:{type:'string'}
-    },required:['descripcion','monto','categoria']}}},required:['registros']}
-  },
-  {name:'pedir_confirmacion',description:'SIEMPRE usá esta herramienta antes de registrar datos. Mostrá resumen al usuario y esperá confirmación.',
-    input_schema:{type:'object',properties:{
-      resumen:{type:'string',description:'Descripción legible de lo que se cargará'},
-      items:{type:'array',items:{type:'object',properties:{tipo:{type:'string',enum:['ingreso','gasto']},descripcion:{type:'string'},monto:{type:'number'}}}},
-      accion_pendiente:{type:'string',description:'registrar_ingreso o registrar_gasto'},
-      datos_pendientes:{type:'object',description:'Datos completos para la herramienta'}
-    },required:['resumen','items','accion_pendiente','datos_pendientes']}
-  }
+  {name:'registrar_ingreso',description:'Registra uno o múltiples ingresos de modelos.',input_schema:{type:'object',properties:{registros:{type:'array',items:{type:'object',properties:{modelo:{type:'string'},monto:{type:'number'},tipo:{type:'string',enum:['Chatting','Suscripción']},mes:{type:'string'},notas:{type:'string'}},required:['modelo','monto','tipo','mes']}}},required:['registros']}},
+  {name:'registrar_gasto',description:'Registra uno o múltiples gastos.',input_schema:{type:'object',properties:{registros:{type:'array',items:{type:'object',properties:{descripcion:{type:'string'},monto:{type:'number'},categoria:{type:'string'},empleado:{type:'string'},modelo_asociado:{type:'string'},fecha:{type:'string'},notas:{type:'string'}},required:['descripcion','monto','categoria']}}},required:['registros']}},
+  {name:'pedir_confirmacion',description:'SIEMPRE usá esta herramienta antes de registrar datos.',input_schema:{type:'object',properties:{resumen:{type:'string'},items:{type:'array',items:{type:'object',properties:{tipo:{type:'string',enum:['ingreso','gasto']},descripcion:{type:'string'},monto:{type:'number'}}}},accion_pendiente:{type:'string'},datos_pendientes:{type:'object'}},required:['resumen','items','accion_pendiente','datos_pendientes']}}
 ];
-
-function buildAgCtx(){
-  const mods=MODS.map(m=>`${m.nom}(${m.nicho||'—'})`).join(', ');
-  const emps=EQ.empleados.map(e=>`${e.nom}(${e.puesto})`).join(', ');
-  return `Sos el agente de carga de WHYnot Creators, agencia de chatting OnlyFans.
-Modelos: ${mods||'ninguna'}. Empleados: ${emps||'ninguno'}. Categorías gastos: ${CATS.join(', ')}.
-Período activo: ${getPL(periodo)} (${periodo}).
-REGLAS: 1) SIEMPRE usá pedir_confirmacion antes de registrar. 2) Si falta el mes, usá ${periodo}. 3) Múltiples modelos → un solo pedir_confirmacion. 4) Respondé en español conciso.`;
-}
-
-function agAppMsg(role,html,isAg=false){
-  const msgs=$('ag-msgs'),div=document.createElement('div');
-  div.className='am '+(role==='user'?'u':'a');
-  const avStyle=isAg?'background:rgba(255,211,42,.15);color:var(--ye);border:1px solid rgba(255,211,42,.3)':'';
-  div.innerHTML=`<div class="aav" style="${avStyle}">${role==='user'?'TU':'AG'}</div><div class="amb">${html}</div>`;
-  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
-}
-function agTyping(id){
-  const msgs=$('ag-msgs'),div=document.createElement('div');
-  div.className='am a';div.id=id;
-  div.innerHTML=`<div class="aav" style="background:rgba(255,211,42,.15);color:var(--ye);border:1px solid rgba(255,211,42,.3)">AG</div><div class="amb"><div class="atyp"><span></span><span></span><span></span></div></div>`;
-  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
-}
-
-async function sendAgente(){
-  const inp=$('ag-in'),msg=inp.value.trim();if(!msg)return;
-  inp.value='';
-  agAppMsg('user',msg.replace(/\n/g,'<br>'));
-  agHist.push({role:'user',content:msg});
-  const tid='agt_'+Date.now();agTyping(tid);
-  await runAgLoop(tid);
-}
-
-async function runAgLoop(tid){
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,system:buildAgCtx(),tools:AG_TOOLS,messages:agHist})});
-    const data=await res.json();
-    $(tid)?.remove();
-    if(!data.content){agAppMsg('assistant','Error al conectar.',true);return;}
-    agHist.push({role:'assistant',content:data.content});
-    for(const block of data.content){
-      if(block.type==='text'&&block.text.trim())agAppMsg('assistant',block.text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'),true);
-      if(block.type==='tool_use')await handleAgTool(block);
-    }
-  }catch(e){$(tid)?.remove();agAppMsg('assistant','Error de conexión.',true);}
-}
-
-async function handleAgTool(block){
-  const {name,input,id:toolId}=block;
-  if(name==='pedir_confirmacion'){
-    agPendingActions=[{toolId,accion:input.accion_pendiente,datos:input.datos_pendientes}];
-    const itemsHtml=(input.items||[]).map(it=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--br)"><span style="color:var(--t2)">${it.descripcion}</span><span style="color:${it.tipo==='ingreso'?'var(--gr)':'var(--re)'};font-weight:600">${it.tipo==='ingreso'?'+':'-'}${fmt(it.monto)}</span></div>`).join('');
-    $('ag-confirm-list').innerHTML=`<div style="margin-bottom:8px;color:var(--tx);font-weight:500">${input.resumen}</div>${itemsHtml}`;
-    $('ag-confirm-panel').style.display='block';
-    $('ag-msgs').scrollTop=$('ag-msgs').scrollHeight;
-    return;
-  }
-  if(name==='registrar_ingreso'){
-    let cnt=0;const nuevos=[];
-    for(const r of(input.registros||[])){
-      const modObj=getModByNom(r.modelo);
-      const mes=r.mes||periodo;
-      const row={id:uid(),modelo:r.modelo,nicho:modObj?.nicho||'',monto:parseFloat(r.monto),mes,fecha:mes+'-15',tipo:r.tipo||'Chatting',notas:r.notas||'Agente IA'};
-      DB.fac.push(row);nuevos.push(row);
-      agRecentLog.unshift({ts:new Date().toLocaleTimeString('es-AR'),tipo:'ingreso',desc:`${r.modelo} — ${fmt(r.monto)} (${r.tipo})`,mes:getPL(mes)});
-      cnt++;
-    }
-    await Promise.all(nuevos.map(r=>sDB_fac(r)));
-    agHist.push({role:'user',content:[{type:'tool_result',tool_use_id:block.id,content:`OK: ${cnt} ingreso(s) registrado(s).`}]});
-    agAppMsg('assistant',`✅ <strong>${cnt} ingreso(s) registrado(s)</strong> correctamente. Podés verlos en <strong>Ingresos</strong>.`,true);
-    updateAgPanel();return;
-  }
-  if(name==='registrar_gasto'){
-    let cnt=0;const nuevos=[];
-    for(const r of(input.registros||[])){
-      const g={id:uid(),categoria:r.categoria||'OTRO',descripcion:r.descripcion,monto:parseFloat(r.monto),fecha:r.fecha||today(),area:'',puesto:'',team:'',empleado:r.empleado||'',software:'',modeloAsoc:r.modelo_asociado||'',notas:r.notas||'Agente IA'};
-      DB.gastos.push(g);nuevos.push(g);
-      agRecentLog.unshift({ts:new Date().toLocaleTimeString('es-AR'),tipo:'gasto',desc:`${r.descripcion} — ${fmt(r.monto)}`,mes:getMes(r.fecha||today())});
-      cnt++;
-    }
-    await Promise.all(nuevos.map(g=>sDB_gas(g)));
-    agHist.push({role:'user',content:[{type:'tool_result',tool_use_id:block.id,content:`OK: ${cnt} gasto(s) registrado(s).`}]});
-    agAppMsg('assistant',`✅ <strong>${cnt} gasto(s) registrado(s)</strong> correctamente. Podés verlos en <strong>Gastos</strong>.`,true);
-    updateAgPanel();return;
-  }
-}
-
-async function agConfirm(ok){
-  $('ag-confirm-panel').style.display='none';
-  const pending=agPendingActions[0];
-  agPendingActions=[];
-  if(!ok){
-    agHist.push({role:'user',content:[{type:'tool_result',tool_use_id:pending?.toolId||'x',content:'El usuario canceló la operación.'}]});
-    agAppMsg('assistant','Cancelado. ¿Qué más necesitás?',true);
-    return;
-  }
-  agHist.push({role:'user',content:[{type:'tool_result',tool_use_id:pending.toolId,content:'Confirmado. Ejecutá '+pending.accion+' con los datos pendientes.'}]});
-  const tid2='agt2_'+Date.now();agTyping(tid2);
-  await runAgLoop(tid2);
-}
-
-function useAgSug(el){$('ag-in').value=el.textContent;sendAgente();}
-function clrAgente(){
-  agHist=[];agPendingActions=[];
-  $('ag-msgs').innerHTML=`<div class="am a"><div class="aav" style="background:rgba(255,211,42,.15);color:var(--ye);border:1px solid rgba(255,211,42,.3)">AG</div><div class="amb">Chat reiniciado. ¿Qué querés cargar?</div></div>`;
-  $('ag-confirm-panel').style.display='none';
-}
-function updateAgPanel(){
-  const el=$('ag-recents');
-  if(!el)return;
-  el.innerHTML=agRecentLog.slice(0,10).map(r=>`<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--br);font-size:10px"><span style="color:${r.tipo==='ingreso'?'var(--gr)':'var(--re)'};flex-shrink:0">●${r.tipo==='ingreso'?'ING':'GAS'}</span><span style="flex:1;color:var(--tx)">${r.desc}</span><span style="color:var(--t3);flex-shrink:0">${r.ts}</span></div>`).join('')||'<div style="color:var(--t3)">Sin registros aún...</div>';
-  const cp=$('ag-ctx-panel');
-  if(!cp)return;
-  cp.innerHTML=`<div style="margin-bottom:8px"><span style="color:var(--t3)">Modelos: </span>${MODS.map(m=>`<span class="tag tg" style="margin-right:3px;font-size:9px">${m.nom}</span>`).join('')||'—'}</div>
-  <div style="margin-bottom:8px"><span style="color:var(--t3)">Empleados: </span>${EQ.empleados.slice(0,6).map(e=>`<span class="tag tgr" style="margin-right:3px;font-size:9px">${e.nom}</span>`).join('')||'—'}</div>
-  <div style="margin-bottom:8px"><span style="color:var(--t3)">Período: </span><span style="color:var(--gr);font-weight:600">${getPL(periodo)}</span></div>
-  <div><span style="color:var(--t3)">Categorías: </span>${CATS.map(c=>`<span style="color:var(--t2);font-size:9px;margin-right:4px">${c}</span>`).join('')}</div>`;
-}
+function buildAgCtx(){const mods=MODS.map(m=>`${m.nom}(${m.nicho||'—'})`).join(', ');const emps=EQ.empleados.map(e=>`${e.nom}(${e.puesto})`).join(', ');return`Sos el agente de carga de WHYnot Creators.\nModelos: ${mods||'ninguna'}. Empleados: ${emps||'ninguno'}. Categorías: ${CATS.join(', ')}.\nPeríodo activo: ${getPL(periodo)} (${periodo}).\nREGLAS: 1) SIEMPRE usá pedir_confirmacion antes de registrar. 2) Si falta mes, usá ${periodo}. 3) Respondé en español.`;}
+function agAppMsg(role,html,isAg=false){const msgs=$('ag-msgs'),div=document.createElement('div');div.className='am '+(role==='user'?'u':'a');const avStyle=isAg?'background:rgba(255,211,42,.15);color:var(--ye);border:1px solid rgba(255,211,42,.3)':'';div.innerHTML=`<div class="aav" style="${avStyle}">${role==='user'?'TU':'AG'}</div><div class="amb">${html}</div>`;msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
+function agTyping(id){const msgs=$('ag-msgs'),div=document.createElement('div');div.className='am a';div.id=id;div.innerHTML=`<div class="aav" style="background:rgba(255,211,42,.15);color:var(--ye);border:1px solid rgba(255,211,42,.3)">AG</div><div class="amb"><div class="atyp"><span></span><span></span><span></span></div></div>`;msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
+async function sendAgente(){const inp=$('ag-in'),msg=inp.value.trim();if(!msg)return;inp.value='';agAppMsg('user',msg.replace(/\n/g,'<br>'));agHist.push({role:'user',content:msg});const tid='agt_'+Date.now();agTyping(tid);await runAgLoop(tid);}
+async function runAgLoop(tid){try{const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,system:buildAgCtx(),tools:AG_TOOLS,messages:agHist})});const data=await res.json();$(tid)?.remove();if(!data.content){agAppMsg('assistant','Error al conectar.',true);return;}agHist.push({role:'assistant',content:data.content});for(const block of data.content){if(block.type==='text'&&block.text.trim())agAppMsg('assistant',block.text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'),true);if(block.type==='tool_use')await handleAgTool(block);}}catch(e){$(tid)?.remove();agAppMsg('assistant','Error de conexión.',true);}}
+async function handleAgTool(block){const{name,input,id:toolId}=block;if(name==='pedir_confirmacion'){agPendingActions=[{toolId,accion:input.accion_pendiente,datos:input.datos_pendientes}];const itemsHtml=(input.items||[]).map(it=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--br)"><span style="color:var(--t2)">${it.descripcion}</span><span style="color:${it.tipo==='ingreso'?'var(--gr)':'var(--re)'};font-weight:600">${it.tipo==='ingreso'?'+':'-'}${fmt(it.monto)}</span></div>`).join('');$('ag-confirm-list').innerHTML=`<div style="margin-bottom:8px;color:var(--tx);font-weight:500">${input.resumen}</div>${itemsHtml}`;$('ag-confirm-panel').style.display='block';$('ag-msgs').scrollTop=$('ag-msgs').scrollHeight;return;}if(name==='registrar_ingreso'){let cnt=0;const nuevos=[];for(const r of(input.registros||[])){const modObj=getModByNom(r.modelo);const mes=r.mes||periodo;const row={id:uid(),modelo:r.modelo,nicho:modObj?.nicho||'',monto:parseFloat(r.monto),mes,fecha:mes+'-15',tipo:r.tipo||'Chatting',notas:r.notas||'Agente IA',horas:0,chatter:''};DB.fac.push(row);nuevos.push(row);agRecentLog.unshift({ts:new Date().toLocaleTimeString('es-AR'),tipo:'ingreso',desc:`${r.modelo} — ${fmt(r.monto)} (${r.tipo})`,mes:getPL(mes)});cnt++;}await Promise.all(nuevos.map(r=>sDB_fac(r)));agHist.push({role:'user',content:[{type:'tool_result',tool_use_id:block.id,content:`OK: ${cnt} ingreso(s) registrado(s).`}]});agAppMsg('assistant',`<strong>${cnt} ingreso(s) registrado(s)</strong>.`,true);updateAgPanel();return;}if(name==='registrar_gasto'){let cnt=0;const nuevos=[];for(const r of(input.registros||[])){const g={id:uid(),categoria:r.categoria||'OTRO',descripcion:r.descripcion,monto:parseFloat(r.monto),fecha:r.fecha||today(),area:'',puesto:'',team:'',empleado:r.empleado||'',software:'',modeloAsoc:r.modelo_asociado||'',notas:r.notas||'Agente IA'};DB.gastos.push(g);nuevos.push(g);agRecentLog.unshift({ts:new Date().toLocaleTimeString('es-AR'),tipo:'gasto',desc:`${r.descripcion} — ${fmt(r.monto)}`,mes:getMes(r.fecha||today())});cnt++;}await Promise.all(nuevos.map(g=>sDB_gas(g)));agHist.push({role:'user',content:[{type:'tool_result',tool_use_id:block.id,content:`OK: ${cnt} gasto(s) registrado(s).`}]});agAppMsg('assistant',`<strong>${cnt} gasto(s) registrado(s)</strong>.`,true);updateAgPanel();return;}}
+async function agConfirm(ok){$('ag-confirm-panel').style.display='none';const pending=agPendingActions[0];agPendingActions=[];if(!ok){agHist.push({role:'user',content:[{type:'tool_result',tool_use_id:pending?.toolId||'x',content:'El usuario canceló.'}]});agAppMsg('assistant','Cancelado.',true);return;}agHist.push({role:'user',content:[{type:'tool_result',tool_use_id:pending.toolId,content:'Confirmado. Ejecutá '+pending.accion+' con los datos pendientes.'}]});const tid2='agt2_'+Date.now();agTyping(tid2);await runAgLoop(tid2);}
+function clrAgente(){agHist=[];agPendingActions=[];$('ag-msgs').innerHTML=`<div class="am a"><div class="aav" style="background:rgba(255,211,42,.15);color:var(--ye);border:1px solid rgba(255,211,42,.3)">AG</div><div class="amb">Chat reiniciado.</div></div>`;$('ag-confirm-panel').style.display='none';}
+function updateAgPanel(){const el=$('ag-recents');if(!el)return;el.innerHTML=agRecentLog.slice(0,10).map(r=>`<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--br);font-size:10px"><span style="color:${r.tipo==='ingreso'?'var(--gr)':'var(--re)'};flex-shrink:0">${r.tipo==='ingreso'?'+ING':'-GAS'}</span><span style="flex:1;color:var(--tx)">${r.desc}</span><span style="color:var(--t3);flex-shrink:0">${r.ts}</span></div>`).join('')||'<div style="color:var(--t3)">Sin registros aún...</div>';const cp=$('ag-ctx-panel');if(!cp)return;cp.innerHTML=`<div style="margin-bottom:8px"><span style="color:var(--t3)">Modelos: </span>${MODS.map(m=>`<span class="tag tg" style="margin-right:3px;font-size:9px">${m.nom}</span>`).join('')||'—'}</div><div style="margin-bottom:8px"><span style="color:var(--t3)">Empleados: </span>${EQ.empleados.slice(0,6).map(e=>`<span class="tag tgr" style="margin-right:3px;font-size:9px">${e.nom}</span>`).join('')||'—'}</div><div style="margin-bottom:8px"><span style="color:var(--t3)">Período: </span><span style="color:var(--gr);font-weight:600">${getPL(periodo)}</span></div><div><span style="color:var(--t3)">Categorías: </span>${CATS.map(c=>`<span style="color:var(--t2);font-size:9px;margin-right:4px">${c}</span>`).join('')}</div>`;}
 function rAgente(){updateAgPanel();}
 
 // ═══════════════════════════════════════════════════
-// LIQUIDACIÓN DE SOCIOS
+// LIQUIDACIÓN
 // ═══════════════════════════════════════════════════
 function rLiq(){
-  if(!$('liq-mes').value)$('liq-mes').value=periodo;
-  const mes=$('liq-mes').value||periodo;
-
-  const fac=fpms(DB.fac,mes);
-  const gas=fpm(DB.gastos,mes);
-
-  const totalIng=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const neta=totalIng-totalGas;
-  const cadaSocio=neta/2;
-
-  // Clasificar gastos por pagador
-  const gasAgustin=gas.filter(x=>x.pagador==='Agustín');
-  const gasMarco=gas.filter(x=>x.pagador==='Marco');
-  const gasAgencia=gas.filter(x=>!x.pagador||x.pagador==='Agencia');
-
-  const pagadoAgustin=gasAgustin.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const pagadoMarco=gasMarco.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const pagadoAgencia=gasAgencia.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-
-  // Gastos que deben repartir 50/50 (los pagados por socios, no por agencia)
-  const gasRepartibles=pagadoAgustin+pagadoMarco;
-  const cadaUnoDebePagar=gasRepartibles/2;
-
-  // Diferencia: positivo = pagó de más (le deben), negativo = pagó de menos (debe)
-  const saldoAgustin=pagadoAgustin-cadaUnoDebePagar;
-  const saldoMarco=pagadoMarco-cadaUnoDebePagar;
-
-  // KPIs
-  $('liq-k-ing').textContent=fmt(totalIng);
-  $('liq-k-gas').textContent=fmt(totalGas);
-  $('liq-k-net').textContent=fmt(neta);
-  $('liq-k-cada').textContent=fmt(cadaSocio);
-
-  // Card Agustín
-  $('liq-ag-pago').textContent=fmt(pagadoAgustin);
-  $('liq-ag-debe').textContent=fmt(cadaUnoDebePagar);
-  $('liq-ag-ganancia').textContent=fmt(cadaSocio);
-  const agTag=saldoAgustin>=0?`✓ Pagó $${Math.abs(saldoAgustin).toFixed(2)} de más`:`Debe $${Math.abs(saldoAgustin).toFixed(2)}`;
-  $('liq-ag-tag').textContent=agTag;
-  $('liq-ag-tag').className='tag '+(saldoAgustin>=0?'tg':'tr2');
-  $('liq-ag-lista').innerHTML=gasAgustin.length?gasAgustin.map(x=>`
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)">
-      <span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span>
-    </div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
-
-  // Card Marco
-  $('liq-ma-pago').textContent=fmt(pagadoMarco);
-  $('liq-ma-debe').textContent=fmt(cadaUnoDebePagar);
-  $('liq-ma-ganancia').textContent=fmt(cadaSocio);
-  const maTag=saldoMarco>=0?`✓ Pagó $${Math.abs(saldoMarco).toFixed(2)} de más`:`Debe $${Math.abs(saldoMarco).toFixed(2)}`;
-  $('liq-ma-tag').textContent=maTag;
-  $('liq-ma-tag').className='tag '+(saldoMarco>=0?'tg':'tr2');
-  $('liq-ma-lista').innerHTML=gasMarco.length?gasMarco.map(x=>`
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)">
-      <span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span>
-    </div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
-
-  // Balance entre socios
+  if(!$('liq-mes').value)$('liq-mes').value=periodo;const mes=$('liq-mes').value||periodo;
+  const fac=fpms(DB.fac,mes),gas=fpm(DB.gastos,mes);
+  const totalIng=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  const neta=totalIng-totalGas,cadaSocio=neta/2;
+  const gasAgustin=gas.filter(x=>x.pagador==='Agustín'),gasMarco=gas.filter(x=>x.pagador==='Marco'),gasAgencia=gas.filter(x=>!x.pagador||x.pagador==='Agencia');
+  const pagadoAgustin=gasAgustin.reduce((s,x)=>s+parseFloat(x.monto||0),0);const pagadoMarco=gasMarco.reduce((s,x)=>s+parseFloat(x.monto||0),0);const pagadoAgencia=gasAgencia.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  const gasRepartibles=pagadoAgustin+pagadoMarco,cadaUnoDebePagar=gasRepartibles/2;
+  const saldoAgustin=pagadoAgustin-cadaUnoDebePagar,saldoMarco=pagadoMarco-cadaUnoDebePagar;
+  $('liq-k-ing').textContent=fmt(totalIng);$('liq-k-gas').textContent=fmt(totalGas);$('liq-k-net').textContent=fmt(neta);$('liq-k-cada').textContent=fmt(cadaSocio);
+  $('liq-ag-pago').textContent=fmt(pagadoAgustin);$('liq-ag-debe').textContent=fmt(cadaUnoDebePagar);$('liq-ag-ganancia').textContent=fmt(cadaSocio);
+  const agTag=saldoAgustin>=0?`Pago $${Math.abs(saldoAgustin).toFixed(2)} de mas`:`Debe $${Math.abs(saldoAgustin).toFixed(2)}`;$('liq-ag-tag').textContent=agTag;$('liq-ag-tag').className='tag '+(saldoAgustin>=0?'tg':'tr2');
+  $('liq-ag-lista').innerHTML=gasAgustin.length?gasAgustin.map(x=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)"><span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span></div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
+  $('liq-ma-pago').textContent=fmt(pagadoMarco);$('liq-ma-debe').textContent=fmt(cadaUnoDebePagar);$('liq-ma-ganancia').textContent=fmt(cadaSocio);
+  const maTag=saldoMarco>=0?`Pago $${Math.abs(saldoMarco).toFixed(2)} de mas`:`Debe $${Math.abs(saldoMarco).toFixed(2)}`;$('liq-ma-tag').textContent=maTag;$('liq-ma-tag').className='tag '+(saldoMarco>=0?'tg':'tr2');
+  $('liq-ma-lista').innerHTML=gasMarco.length?gasMarco.map(x=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)"><span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span></div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
   const bal=$('liq-balance');
-  if(Math.abs(saldoAgustin)<0.01){
-    bal.innerHTML=`<div style="color:var(--gr);font-size:16px;font-weight:700">✓ Están al día</div><div style="color:var(--t3);font-size:11px;margin-top:6px">Ambos pagaron lo mismo</div>`;
-  } else if(saldoAgustin>0){
-    bal.innerHTML=`<div style="color:var(--ye);font-size:13px;margin-bottom:8px">Marco le debe a Agustín:</div>
-      <div style="font-size:28px;font-weight:700;color:var(--gr)">${fmt(Math.abs(saldoAgustin))}</div>
-      <div style="color:var(--t3);font-size:10px;margin-top:6px">Agustín pagó ${fmt(saldoAgustin)} más de lo que le corresponde</div>`;
-  } else {
-    bal.innerHTML=`<div style="color:var(--ye);font-size:13px;margin-bottom:8px">Agustín le debe a Marco:</div>
-      <div style="font-size:28px;font-weight:700;color:var(--gr)">${fmt(Math.abs(saldoMarco))}</div>
-      <div style="color:var(--t3);font-size:10px;margin-top:6px">Marco pagó ${fmt(Math.abs(saldoMarco))} más de lo que le corresponde</div>`;
-  }
-
-  // Wallet agencia
-  $('liq-wallet-tag').textContent=fmt(pagadoAgencia);
-  $('liq-wallet-lista').innerHTML=gasAgencia.length?gasAgencia.map(x=>`
-    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)">
-      <span style="color:var(--t2)">${x.descripcion}</span>
-      <span style="color:var(--re)">${fmt(x.monto)}</span>
-    </div>`).join(''):'<div style="color:var(--t3)">Sin gastos de agencia este mes</div>';
+  if(Math.abs(saldoAgustin)<0.01){bal.innerHTML=`<div style="color:var(--gr);font-size:16px;font-weight:700">Estan al dia</div><div style="color:var(--t3);font-size:11px;margin-top:6px">Ambos pagaron lo mismo</div>`;}
+  else if(saldoAgustin>0){bal.innerHTML=`<div style="color:var(--ye);font-size:13px;margin-bottom:8px">Marco le debe a Agustin:</div><div style="font-size:28px;font-weight:700;color:var(--gr)">${fmt(Math.abs(saldoAgustin))}</div>`;}
+  else{bal.innerHTML=`<div style="color:var(--ye);font-size:13px;margin-bottom:8px">Agustin le debe a Marco:</div><div style="font-size:28px;font-weight:700;color:var(--gr)">${fmt(Math.abs(saldoMarco))}</div>`;}
+  $('liq-wallet-tag').textContent=fmt(pagadoAgencia);$('liq-wallet-lista').innerHTML=gasAgencia.length?gasAgencia.map(x=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)"><span style="color:var(--t2)">${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span></div>`).join(''):'<div style="color:var(--t3)">Sin gastos de agencia este mes</div>';
 }
 
 // ═══════════════════════════════════════════════════
-// INIT + DEMO
+// INIT
 // ═══════════════════════════════════════════════════
 async function init(){
   $('tbdt').textContent=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
-
-  // Cargar todos los datos desde Supabase
   await loadFromSupabase();
-
-  // Setear defaults de UI
   const now=new Date();
   periodo=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const perSel=$('per-sel');
-  if(perSel){
-    // agregar el mes actual si no está en el select
-    const opt=perSel.querySelector(`option[value="${periodo}"]`);
-    if(!opt){const o=document.createElement('option');o.value=periodo;o.textContent=getPL(periodo);o.selected=true;perSel.appendChild(o);}
-    else opt.selected=true;
-  }
+  if(perSel){const opt=perSel.querySelector(`option[value="${periodo}"]`);if(!opt){const o=document.createElement('option');o.value=periodo;o.textContent=getPL(periodo);o.selected=true;perSel.appendChild(o);}else opt.selected=true;}
   $('fac-mes').value=periodo;$('fac-fecha').value=today();
   $('gas-fecha').value=today();$('gas-fmes').value=periodo;$('fac-fmes').value=periodo;
   $('pag-mes').value=periodo;
-
   rDash();
 }
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded',async()=>{
   initTheme();
-  try { await loadUsers(); } catch(e) {}
-  if(checkAuth()) return;
+  try{await loadUsers();}catch(e){}
+  if(checkAuth())return;
 });
 </script>
 </body>
