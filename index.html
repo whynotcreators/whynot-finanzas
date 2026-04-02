@@ -1909,15 +1909,27 @@ function rModelos(){
   const refSec=$('refs-activos');
   if(refSec){
     if(refs.length){
+      // calcular facturación acumulada de cada modelo referida en el período activo
+      const modMap={};
+      fpms(DB.fac,periodo).forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
       refSec.innerHTML=`
-        <table><thead><tr><th>Modelo referida</th><th>Nicho</th><th>Referidor</th><th>Comisión</th><th>Wallet</th></tr></thead>
-        <tbody>${refs.map(m=>`<tr>
-          <td class="b">${m.nom}</td>
-          <td><span class="tag tgr">${m.nicho||'—'}</span></td>
-          <td style="color:var(--pu);font-weight:500">${m.referido.nom}</td>
-          <td><span class="tag tp">${m.referido.pct}%</span></td>
-          <td style="font-size:10px;color:var(--t3)">${m.referido.wallet||'— Sin wallet —'}</td>
-        </tr>`).join('')}</tbody></table>`;
+        <div style="font-size:9px;color:var(--t3);margin-bottom:10px">Período: <strong style="color:var(--gr)">${getPL(periodo)}</strong> · La columna "Ganancia" refleja lo acumulado en el período activo</div>
+        <table><thead><tr><th>Modelo referida</th><th>Nicho</th><th>Referidor</th><th>Comisión</th><th>Wallet</th><th>Facturado modelo</th><th>Ganancia referidor</th></tr></thead>
+        <tbody>${refs.map(m=>{
+          const facMod=modMap[m.nom]||0;
+          const resM=calcModelo(m,facMod);
+          const pagaGastos=resM.pagaGastos;
+          const ganRef=pagaGastos?(facMod*m.referido.pct/100):0;
+          return`<tr>
+            <td class="b">${m.nom}</td>
+            <td><span class="tag tgr">${m.nicho||'—'}</span></td>
+            <td style="color:var(--pu);font-weight:500">${m.referido.nom}</td>
+            <td><span class="tag tp">${m.referido.pct}%</span></td>
+            <td style="font-size:10px;color:var(--t3)">${m.referido.wallet||'— Sin wallet —'}</td>
+            <td style="color:var(--gr)">${facMod>0?fmt(facMod):'Sin ingresos'}</td>
+            <td style="font-weight:600;color:${ganRef>0?'var(--pu)':'var(--t3)'}">${ganRef>0?fmt(ganRef):pagaGastos?'$0.00':'Modelo no paga gastos'}</td>
+          </tr>`;
+        }).join('')}</tbody></table>`;
     } else {
       refSec.innerHTML='<div class="emp">Sin referidos activos</div>';
     }
