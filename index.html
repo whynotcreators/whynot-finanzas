@@ -962,7 +962,21 @@ tbody td.b{color:var(--tx);font-weight:500;}
             <input type="radio" name="emp-sal-base" id="emp-sal-base-chat" value="chatting" onchange="updEmpSalBase()"> Solo Chatting
           </label>
         </div>
-        <div class="fr" id="emp-sal-mods-w" style="display:none;max-width:340px;margin-bottom:9px"><label>Modelos específicas</label><select id="emp-sal-mods" multiple style="height:80px;background:var(--s2);border:1px solid var(--b2);border-radius:4px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select><div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias</div></div>
+        <div id="emp-sal-mods-w" style="display:none;margin-bottom:9px">
+          <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+            <div class="fr" style="min-width:160px">
+              <label>Filtrar por nicho</label>
+              <select id="emp-sal-nicho" onchange="onEmpSalNicho()" style="background:var(--s2);border:1px solid var(--br);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:7px 10px;outline:none;width:100%;">
+                <option value="">— Todos los nichos —</option>
+              </select>
+            </div>
+            <div class="fr" style="min-width:200px;flex:1">
+              <label>Modelos específicas</label>
+              <select id="emp-sal-mods" multiple style="height:90px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select>
+              <div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias</div>
+            </div>
+          </div>
+        </div>
         <button class="btn bp" onclick="addEmp()">+ Guardar Empleado</button>
       </div>
       <div class="sec">
@@ -1067,7 +1081,21 @@ tbody td.b{color:var(--tx);font-weight:500;}
         <input type="radio" name="ee-sal-base" id="ee-sal-base-chat" value="chatting" onchange="updEeSalBase()"> Solo Chatting
       </label>
     </div>
-    <div class="fr" id="ee-mods-w" style="display:none;margin-bottom:8px"><label>Modelos específicas</label><select id="ee-mods" multiple style="height:80px;background:var(--s2);border:1px solid var(--b2);border-radius:4px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select></div>
+    <div id="ee-mods-w" style="display:none;margin-bottom:8px">
+      <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+        <div class="fr" style="min-width:150px">
+          <label>Filtrar por nicho</label>
+          <select id="ee-sal-nicho" onchange="onEeSalNicho()" style="background:var(--s2);border:1px solid var(--br);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:7px 10px;outline:none;width:100%;">
+            <option value="">— Todos los nichos —</option>
+          </select>
+        </div>
+        <div class="fr" style="min-width:180px;flex:1">
+          <label>Modelos específicas</label>
+          <select id="ee-mods" multiple style="height:90px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select>
+          <div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias</div>
+        </div>
+      </div>
+    </div>
     <div class="mod-ft"><button class="btn bg" onclick="clsEmpMod()">Cancelar</button><button class="btn bp" onclick="saveEe()">Guardar</button></div>
   </div>
 </div>
@@ -1674,7 +1702,25 @@ function updEmpArea(){const area=$('emp-area').value;const puestos=getPuestoNoms
 function updEmpPuesto(){const p=$('emp-puesto').value;$('emp-team-w').style.display=p==='Chatter'?'flex':'none';}
 function updEmpSalBase(){
   const v=document.querySelector('input[name="emp-sal-base"]:checked')?.value||'total';
-  $('emp-sal-mods-w').style.display=v==='modelos'?'flex':'none';
+  const w=$('emp-sal-mods-w');
+  if(v==='modelos'){
+    w.style.display='block';
+    // poblar nichos
+    const sn=$('emp-sal-nicho');
+    if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
+    onEmpSalNicho();
+  } else {
+    w.style.display='none';
+  }
+}
+function onEmpSalNicho(){
+  const nicho=$('emp-sal-nicho')?.value||'';
+  const mods=nicho?MODS.filter(m=>m.nicho===nicho):MODS;
+  const sel=$('emp-sal-mods');
+  if(!sel)return;
+  // preservar selección actual
+  const selActual=Array.from(sel.selectedOptions||[]).map(o=>o.value);
+  sel.innerHTML=mods.map(m=>`<option value="${m.nom}"${selActual.includes(m.nom)?' selected':''}>${m.nom}${m.nicho?' ('+m.nicho+')':''}</option>`).join('');
 }
 async function addEmp(){
   const nom=$('emp-nom').value.trim(),puesto=$('emp-puesto').value,area=$('emp-area').value;
@@ -1705,20 +1751,45 @@ function openEmp(id){
   $('ee-hora').value=e.salHora||'';
   $('ee-pct').value=e.salPct||'';
   $('ee-techo').value=e.salTecho||'';
-  // radio base
+  // radio base + cascada nicho→modelo
   const base=e.salBase||'total';
   const rb=document.getElementById(`ee-sal-base-${base}`);
   if(rb)rb.checked=true;
-  $('ee-mods-w').style.display=base==='modelos'?'flex':'none';
-  const eeMods=$('ee-mods');const selMods=(e.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
-  if(eeMods)eeMods.innerHTML=MODS.map(m=>`<option value="${m.nom}"${selMods.includes(m.nom)?' selected':''}>${m.nom} (${m.nicho||'—'})</option>`).join('');
+  if(base==='modelos'){
+    $('ee-mods-w').style.display='block';
+    const sn=$('ee-sal-nicho');
+    if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
+    onEeSalNicho();
+    // re-marcar las modelos guardadas
+    const eeMods=$('ee-mods');
+    const selMods=(e.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
+    if(eeMods)Array.from(eeMods.options).forEach(o=>{o.selected=selMods.includes(o.value);});
+  } else {
+    $('ee-mods-w').style.display='none';
+  }
   $('emp-modal').classList.add('on');
 }
 function updEeArea(){const area=$('ee-area').value;const puestos=getPuestoNoms(area);$('ee-puesto').innerHTML='<option value="">—</option>'+puestos.map(p=>`<option value="${p.nom}">${p.nom}</option>`).join('');$('ee-team-w').style.display='none';}
 function updEePuesto(){const p=$('ee-puesto').value;$('ee-team-w').style.display=p==='Chatter'?'flex':'none';}
 function updEeSalBase(){
   const v=document.querySelector('input[name="ee-sal-base"]:checked')?.value||'total';
-  $('ee-mods-w').style.display=v==='modelos'?'flex':'none';
+  const w=$('ee-mods-w');
+  if(v==='modelos'){
+    w.style.display='block';
+    const sn=$('ee-sal-nicho');
+    if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
+    onEeSalNicho();
+  } else {
+    w.style.display='none';
+  }
+}
+function onEeSalNicho(){
+  const nicho=$('ee-sal-nicho')?.value||'';
+  const mods=nicho?MODS.filter(m=>m.nicho===nicho):MODS;
+  const sel=$('ee-mods');
+  if(!sel)return;
+  const selActual=Array.from(sel.selectedOptions||[]).map(o=>o.value);
+  sel.innerHTML=mods.map(m=>`<option value="${m.nom}"${selActual.includes(m.nom)?' selected':''}>${m.nom}${m.nicho?' ('+m.nicho+')':''}</option>`).join('');
 }
 async function saveEe(){
   const id=$('ee-id').value,idx=EQ.empleados.findIndex(x=>x.id===id);if(idx<0)return;
