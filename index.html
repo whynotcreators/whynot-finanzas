@@ -950,7 +950,6 @@ tbody td.b{color:var(--tx);font-weight:500;}
             <label>Tipo de sueldo</label>
             <select id="emp-sal-tipo" onchange="updEmpSalTipo()">
               <option value="fijo">Fijo mensual</option>
-              <option value="hora">Por hora</option>
               <option value="comision">Comisión</option>
               <option value="fijo+comision">Fijo + Comisión</option>
               <option value="hora+comision">Por hora + Comisión</option>
@@ -1068,7 +1067,6 @@ tbody td.b{color:var(--tx);font-weight:500;}
     <div class="fr" style="margin-bottom:10px"><label>Tipo de sueldo</label>
       <select id="ee-sal-tipo" onchange="updEeSalTipo()">
         <option value="fijo">Fijo mensual</option>
-        <option value="hora">Por hora</option>
         <option value="comision">Comisión</option>
         <option value="fijo+comision">Fijo + Comisión</option>
         <option value="hora+comision">Por hora + Comisión</option>
@@ -1202,7 +1200,24 @@ async function loadFromSupabase(){
     if(gas)DB.gastos=gas.map(r=>({id:r.id,categoria:r.categoria,descripcion:r.descripcion,monto:parseFloat(r.monto),fecha:r.fecha,area:r.area,puesto:r.puesto,team:r.team,empleado:r.empleado,software:r.software,modeloAsoc:r.modelo_asoc,pagador:r.pagador||'Agencia',notas:r.notas}));
     if(pagos)pagos.forEach(p=>{DB.pagPagos[p.id]=p.pagado;});
     if(mods)MODS=mods.map(r=>({id:r.id,nom:r.nom,nicho:r.nicho,tipo:r.tipo,pct:parseFloat(r.pct||0),tramos:r.tramos||[],team:r.team||'',teams:r.teams||[]}));
-    if(equipo)EQ.empleados=equipo.map(r=>({id:r.id,nom:r.nom,area:r.area,puesto:r.puesto,team:r.team,salBase:r.sal_tipo||'total',salFijo:parseFloat(r.sal_fijo||0),salPct:parseFloat(r.sal_pct||0),salTecho:parseFloat(r.sal_techo||0),salMods:r.sal_mods||'',salHora:parseFloat(r.sal_hora||0)}));
+    if(equipo)EQ.empleados=equipo.map(r=>{
+      // migrar sal_tipo viejo ('total','modelos','chatting','fijo','por-hora','pct-total',etc.) al nuevo sistema
+      let salBase=r.sal_tipo||'fijo';
+      if(salBase==='total'||salBase==='modelos'||salBase==='chatting'||salBase==='pct-total'||salBase==='pct-modelos'||salBase==='pct-techo'){
+        // era el sistema de comisión pura
+        salBase='comision';
+      } else if(salBase==='por-hora'){
+        salBase='hora+comision';
+      }
+      // si no tiene ni fijo ni pct pero sí salFijo → es fijo
+      const salFijo=parseFloat(r.sal_fijo||0);
+      const salPct=parseFloat(r.sal_pct||0);
+      if(salBase==='comision'&&salFijo>0&&salPct>0)salBase='fijo+comision';
+      else if(salBase==='comision'&&salFijo>0&&salPct===0)salBase='fijo';
+      return{id:r.id,nom:r.nom,area:r.area,puesto:r.puesto,team:r.team,
+        salBase,salFijo,salPct,salTecho:parseFloat(r.sal_techo||0),
+        salMods:r.sal_mods||'',salHora:parseFloat(r.sal_hora||0)};
+    });
     if(config){const cfgMap={};config.forEach(c=>{cfgMap[c.key]=c.value;});if(cfgMap.puestos)EQ.puestos=cfgMap.puestos;if(cfgMap.teams)EQ.teams=cfgMap.teams;if(cfgMap.nichos)NICHOS=cfgMap.nichos;if(cfgMap.cats)CATS=cfgMap.cats;if(cfgMap.objetivo)OBJ=cfgMap.objetivo;if(cfgMap.usuarios)USERS=cfgMap.usuarios;}
     hideLoader();return true;
   }catch(e){hideLoader();console.error('Error Supabase:',e);notif('Error conectando con la base de datos','er');return false;}
@@ -1443,6 +1458,8 @@ async function sDB_fac(row){
 }
 function rFac(){
   popFacSelects();
+  if(!$('fac-mes').value)$('fac-mes').value=periodo;
+  if(!$('fac-fecha').value)$('fac-fecha').value=today();
   if(!$('fac-fmes').value)$('fac-fmes').value=periodo;
   let data=DB.fac.slice().sort((a,b)=>b.mes.localeCompare(a.mes));
   const fn=$('fac-fn')?.value,fm=$('fac-fm')?.value,fmes=$('fac-fmes')?.value;
@@ -1554,6 +1571,7 @@ async function delCat(c){CATS=CATS.filter(x=>x!==c);await sCA();rGas();}
 function rCats(){const cl=$('cats-list');if(!cl)return;cl.innerHTML=CATS.map(c=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px">${c}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delCat('${c}')">x</span></div>`).join('');}
 function rGas(){
   popGasSelects();rCats();
+  if(!$('gas-fecha').value)$('gas-fecha').value=today();
   if(!$('gas-fmes').value)$('gas-fmes').value=periodo;
   let data=DB.gastos.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha));
   const fc=$('gas-fcat')?.value,fmes=$('gas-fmes')?.value;
@@ -1707,13 +1725,17 @@ function rPuestos(){const flt=$('puesto-area-flt')?.value||'';const lista=getPue
 function renderEmpTb(){
   const fa=$('emp-flt-area')?.value||'',fp=$('emp-flt-puesto')?.value||'',ft=$('emp-flt-team')?.value||'',fn=($('emp-flt-nom')?.value||'').toLowerCase().trim();
   let data=EQ.empleados.slice();if(fa)data=data.filter(e=>e.area===fa);if(fp)data=data.filter(e=>e.puesto===fp);if(ft)data=data.filter(e=>e.team===ft);if(fn)data=data.filter(e=>e.nom.toLowerCase().includes(fn));
+  const tipoLbl={'fijo':'Fijo','comision':'Comisión','fijo+comision':'Fijo+Com','hora+comision':'Hora+Com'};
   $('emp-tb').innerHTML=data.length?data.map(e=>{
     const partes=[];
-    if(parseFloat(e.salFijo||0)>0)partes.push(`Fijo ${fmt(e.salFijo)}/mes`);
-    if(parseFloat(e.salHora||0)>0)partes.push(`$${e.salHora}/h`);
-    if(parseFloat(e.salPct||0)>0){let d=`${e.salPct}%`;if(e.salBase==='modelos')d+=` mods`;else if(e.salBase==='chatting')d+=` chat`;if(parseFloat(e.salTecho||0)>0)d+=` (techo ${fmt(e.salTecho)})`;partes.push(d);}
+    const st=e.salBase||'fijo';
+    if(st==='fijo'||st==='fijo+comision')if(parseFloat(e.salFijo||0)>0)partes.push(`${fmt(e.salFijo)}/mes`);
+    if(st==='hora+comision')if(parseFloat(e.salHora||0)>0)partes.push(`$${e.salHora}/h`);
+    if(st!=='fijo')if(parseFloat(e.salPct||0)>0){let d=`${e.salPct}%`;if(parseFloat(e.salTecho||0)>0)d+=` (techo ${fmt(e.salTecho)})`;partes.push(d);}
     const det=partes.join(' + ')||'—';
-    return`<tr><td class="b">${e.nom}</td><td><span class="tag tgr">${e.area||'—'}</span></td><td><span class="tag ${e.puesto==='Team Leader'?'ty':e.puesto==='Chatter'?'tb':'tp'}">${e.puesto}</span></td><td>${e.team||'—'}</td><td style="font-size:10px;color:var(--t2)">${det}</td><td><div style="display:flex;gap:5px"><button class="btn bg bs" onclick="openEmp('${e.id}')">Editar</button><button class="btn bd2 bs" onclick="delEmp('${e.id}')">x</button></div></td></tr>`;
+    const mods=(e.salMods||'').split(',').filter(Boolean);
+    const modsTag=mods.length?`<span style="font-size:9px;color:var(--t3);margin-left:4px">(${mods.length} mod${mods.length!==1?'s':''})</span>`:'';
+    return`<tr><td class="b">${e.nom}</td><td><span class="tag tgr">${e.area||'—'}</span></td><td><span class="tag ${e.puesto==='Team Leader'?'ty':e.puesto==='Chatter'?'tb':'tp'}">${e.puesto}</span></td><td>${e.team||'—'}</td><td style="font-size:10px;color:var(--t2)"><span class="tag tgr" style="margin-right:4px">${tipoLbl[st]||st}</span>${det}${modsTag}</td><td><div style="display:flex;gap:5px"><button class="btn bg bs" onclick="openEmp('${e.id}')">Editar</button><button class="btn bd2 bs" onclick="delEmp('${e.id}')">x</button></div></td></tr>`;
   }).join(''):`<tr><td colspan="6" class="emp">Sin empleados${fa||fp||ft||fn?' con estos filtros':''}</td></tr>`;
 }
 async function addPuesto(){const nom=$('puesto-inp').value.trim(),area=$('puesto-area-sel').value;if(!nom){notif('Ingresá el nombre del puesto','er');return;}const puestos=EQ.puestos||[];const norm=puestos.map(p=>typeof p==='string'?{nom:p,area:''}:p);if(norm.find(p=>p.nom===nom)){notif('Ya existe','er');return;}norm.push({nom,area});EQ.puestos=norm;await sEQ_puestos();$('puesto-inp').value='';rEquipo();notif('Puesto agregado');}
