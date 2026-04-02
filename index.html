@@ -976,6 +976,12 @@ tbody td.b{color:var(--tx);font-weight:500;}
         <button class="btn bp" onclick="addMod()">+ Guardar Modelo</button>
       </div>
       <div id="mods-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
+
+      <!-- Referidos activos -->
+      <div class="sec" style="margin-top:14px">
+        <div class="sh"><span class="st">Referidos activos</span></div>
+        <div class="sb2" id="refs-activos"></div>
+      </div>
     </div>
 
     <!-- ══ EQUIPO ══ -->
@@ -1897,6 +1903,25 @@ function rModelos(){
       </div>
     </div>`;
   }).join(''):'<div class="emp" style="grid-column:span 3">No hay modelos.</div>';
+
+  // ── Tabla de referidos activos ──
+  const refs=MODS.filter(m=>m.referido);
+  const refSec=$('refs-activos');
+  if(refSec){
+    if(refs.length){
+      refSec.innerHTML=`
+        <table><thead><tr><th>Modelo referida</th><th>Nicho</th><th>Referidor</th><th>Comisión</th><th>Wallet</th></tr></thead>
+        <tbody>${refs.map(m=>`<tr>
+          <td class="b">${m.nom}</td>
+          <td><span class="tag tgr">${m.nicho||'—'}</span></td>
+          <td style="color:var(--pu);font-weight:500">${m.referido.nom}</td>
+          <td><span class="tag tp">${m.referido.pct}%</span></td>
+          <td style="font-size:10px;color:var(--t3)">${m.referido.wallet||'— Sin wallet —'}</td>
+        </tr>`).join('')}</tbody></table>`;
+    } else {
+      refSec.innerHTML='<div class="emp">Sin referidos activos</div>';
+    }
+  }
 }
 async function addNicho(){const v=$('nicho-inp').value.trim();if(!v){notif('Ingresá un nombre','er');return;}if(NICHOS.includes(v)){notif('Ya existe','er');return;}NICHOS.push(v);await sNI();$('nicho-inp').value='';rModelos();notif('Nicho agregado');}
 async function delNicho(n){NICHOS=NICHOS.filter(x=>x!==n);await sNI();rModelos();}
