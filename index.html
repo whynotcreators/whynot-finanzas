@@ -943,21 +943,24 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div class="fr"><label>Puesto</label><select id="emp-puesto" onchange="updEmpPuesto()"><option value="">— Primero elegir área —</option></select></div>
           <div class="fr" id="emp-team-w" style="display:none"><label>Team</label><select id="emp-team"><option value="">— Seleccionar —</option></select></div>
         </div>
-        <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;margin-top:2px">Estructura Salarial</div>
-        <div class="fg f3" style="margin-bottom:9px">
-          <div class="fr"><label>Tipo de sueldo</label>
-            <select id="emp-sal-tipo" onchange="updEmpSal()">
-              <option value="fijo">Sueldo fijo mensual</option>
-              <option value="por-hora">Pago por hora</option>
-              <option value="pct-total">% del total facturado</option>
-              <option value="pct-modelos">% de modelos específicas</option>
-              <option value="pct-techo">% con techo máximo</option>
-            </select>
-          </div>
-          <div class="fr" id="emp-sal-fijo-w" style="display:none"><label>Monto fijo (USD/mes)</label><input type="number" id="emp-sal-fijo" placeholder="500" min="0"></div>
-          <div class="fr" id="emp-sal-hora-w" style="display:none"><label>Tarifa por hora (USD)</label><input type="number" id="emp-sal-hora" placeholder="2" min="0" step="0.5"></div>
-          <div class="fr" id="emp-sal-pct-w" style="display:none"><label>Porcentaje (%)</label><input type="number" id="emp-sal-pct" placeholder="8" min="0" max="100" step="0.1"></div>
-          <div class="fr" id="emp-sal-techo-w" style="display:none"><label>Techo máximo (USD)</label><input type="number" id="emp-sal-techo" placeholder="30000" min="0"></div>
+        <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;margin-top:2px">Estructura Salarial — podés combinar componentes</div>
+        <div class="fg f4" style="margin-bottom:9px">
+          <div class="fr"><label>Fijo mensual (USD)</label><input type="number" id="emp-sal-fijo" placeholder="0 = no aplica" min="0"></div>
+          <div class="fr"><label>Tarifa por hora (USD)</label><input type="number" id="emp-sal-hora" placeholder="0 = no aplica" min="0" step="0.5"></div>
+          <div class="fr"><label>Comisión (%)</label><input type="number" id="emp-sal-pct" placeholder="0 = no aplica" min="0" max="100" step="0.1"></div>
+          <div class="fr"><label>Techo comisión (USD)</label><input type="number" id="emp-sal-techo" placeholder="0 = sin techo" min="0"></div>
+        </div>
+        <div style="font-size:8px;color:var(--t3);letter-spacing:.08em;margin-bottom:6px">Base de comisión:</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:9px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
+            <input type="radio" name="emp-sal-base" id="emp-sal-base-total" value="total" checked> Total facturado
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
+            <input type="radio" name="emp-sal-base" id="emp-sal-base-mods" value="modelos" onchange="updEmpSalBase()"> Modelos específicas
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
+            <input type="radio" name="emp-sal-base" id="emp-sal-base-chat" value="chatting" onchange="updEmpSalBase()"> Solo Chatting
+          </label>
         </div>
         <div class="fr" id="emp-sal-mods-w" style="display:none;max-width:340px;margin-bottom:9px"><label>Modelos específicas</label><select id="emp-sal-mods" multiple style="height:80px;background:var(--s2);border:1px solid var(--b2);border-radius:4px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select><div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias</div></div>
         <button class="btn bp" onclick="addEmp()">+ Guardar Empleado</button>
@@ -971,7 +974,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
             <input type="text" class="finp" id="emp-flt-nom" placeholder="Buscar nombre..." oninput="renderEmpTb()" style="width:130px">
           </div>
         </div>
-        <table><thead><tr><th>Nombre</th><th>Área</th><th>Puesto</th><th>Team</th><th>Estructura</th><th>Detalle</th><th></th></tr></thead>
+        <table><thead><tr><th>Nombre</th><th>Área</th><th>Puesto</th><th>Team</th><th>Sueldo</th><th></th></tr></thead>
         <tbody id="emp-tb"></tbody></table>
       </div>
     </div>
@@ -1045,20 +1048,24 @@ tbody td.b{color:var(--tx);font-weight:500;}
       <div class="fr"><label>Puesto</label><select id="ee-puesto" onchange="updEePuesto()"><option value="">—</option></select></div>
       <div class="fr" id="ee-team-w" style="display:none"><label>Team</label><select id="ee-team"><option value="">—</option></select></div>
     </div>
-    <div class="fr" style="margin-bottom:8px"><label>Tipo de sueldo</label>
-      <select id="ee-sal-tipo" onchange="updEeSal()">
-        <option value="fijo">Fijo mensual</option>
-        <option value="por-hora">Por hora</option>
-        <option value="pct-total">% total facturado</option>
-        <option value="pct-modelos">% modelos específicas</option>
-        <option value="pct-techo">% con techo</option>
-      </select>
-    </div>
+    <div class="fr" style="margin-bottom:8px;font-size:8px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase">Estructura Salarial — podés combinar</div>
     <div class="fg f2" style="margin-bottom:8px">
-      <div class="fr" id="ee-fijo-w" style="display:none"><label>Fijo (USD)</label><input type="number" id="ee-fijo"></div>
-      <div class="fr" id="ee-hora-w" style="display:none"><label>Tarifa por hora (USD)</label><input type="number" id="ee-hora" placeholder="2"></div>
-      <div class="fr" id="ee-pct-w" style="display:none"><label>Porcentaje (%)</label><input type="number" id="ee-pct"></div>
-      <div class="fr" id="ee-techo-w" style="display:none"><label>Techo USD</label><input type="number" id="ee-techo"></div>
+      <div class="fr"><label>Fijo mensual (USD)</label><input type="number" id="ee-fijo" placeholder="0 = no aplica" min="0"></div>
+      <div class="fr"><label>Tarifa por hora (USD)</label><input type="number" id="ee-hora" placeholder="0 = no aplica" min="0" step="0.5"></div>
+      <div class="fr"><label>Comisión (%)</label><input type="number" id="ee-pct" placeholder="0 = no aplica" min="0" max="100" step="0.1"></div>
+      <div class="fr"><label>Techo comisión (USD)</label><input type="number" id="ee-techo" placeholder="0 = sin techo" min="0"></div>
+    </div>
+    <div style="font-size:8px;color:var(--t3);letter-spacing:.08em;margin-bottom:5px">Base de comisión:</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
+        <input type="radio" name="ee-sal-base" id="ee-sal-base-total" value="total" checked> Total facturado
+      </label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
+        <input type="radio" name="ee-sal-base" id="ee-sal-base-mods" value="modelos" onchange="updEeSalBase()"> Modelos específicas
+      </label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
+        <input type="radio" name="ee-sal-base" id="ee-sal-base-chat" value="chatting" onchange="updEeSalBase()"> Solo Chatting
+      </label>
     </div>
     <div class="fr" id="ee-mods-w" style="display:none;margin-bottom:8px"><label>Modelos específicas</label><select id="ee-mods" multiple style="height:80px;background:var(--s2);border:1px solid var(--b2);border-radius:4px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select></div>
     <div class="mod-ft"><button class="btn bg" onclick="clsEmpMod()">Cancelar</button><button class="btn bp" onclick="saveEe()">Guardar</button></div>
@@ -1150,7 +1157,7 @@ async function sDB_gas_del(id){await sbDel('wf_gastos',`id=eq.${id}`);}
 async function sDB_pago(key,val){if(val){await sbUpsert('wf_pagos',[{id:key,pagado:val}]);}else{await sbDel('wf_pagos',`id=eq.${encodeURIComponent(key)}`);}}
 async function sMD(){if(!MODS.length)return;const rows=MODS.map(m=>({id:m.id,nom:m.nom,nicho:m.nicho||'',tipo:m.tipo,pct:m.pct||0,tramos:m.tramos||[],team:m.team||'',teams:m.teams||[]}));await sbUpsert('wf_modelos',rows);}
 async function sMD_del(id){await sbDel('wf_modelos',`id=eq.${id}`);}
-async function sEQ(){if(!EQ.empleados.length)return;const rows=EQ.empleados.map(e=>({id:e.id,nom:e.nom,area:e.area||'',puesto:e.puesto,team:e.team||'',sal_tipo:e.salTipo||'fijo',sal_fijo:e.salFijo||0,sal_pct:e.salPct||0,sal_techo:e.salTecho||0,sal_mods:e.salMods||'',sal_hora:e.salHora||2}));await sbUpsert('wf_equipo',rows);}
+async function sEQ(){if(!EQ.empleados.length)return;const rows=EQ.empleados.map(e=>({id:e.id,nom:e.nom,area:e.area||'',puesto:e.puesto,team:e.team||'',sal_tipo:e.salBase||'total',sal_fijo:e.salFijo||0,sal_pct:e.salPct||0,sal_techo:e.salTecho||0,sal_mods:e.salMods||'',sal_hora:e.salHora||0}));await sbUpsert('wf_equipo',rows);}
 async function sEQ_del(id){await sbDel('wf_equipo',`id=eq.${id}`);}
 async function sCFG(key,val){await sbUpsert('wf_config',[{key,value:val}]);}
 async function sNI(){await sCFG('nichos',NICHOS);}
@@ -1168,7 +1175,7 @@ async function loadFromSupabase(){
     if(gas)DB.gastos=gas.map(r=>({id:r.id,categoria:r.categoria,descripcion:r.descripcion,monto:parseFloat(r.monto),fecha:r.fecha,area:r.area,puesto:r.puesto,team:r.team,empleado:r.empleado,software:r.software,modeloAsoc:r.modelo_asoc,pagador:r.pagador||'Agencia',notas:r.notas}));
     if(pagos)pagos.forEach(p=>{DB.pagPagos[p.id]=p.pagado;});
     if(mods)MODS=mods.map(r=>({id:r.id,nom:r.nom,nicho:r.nicho,tipo:r.tipo,pct:parseFloat(r.pct||0),tramos:r.tramos||[],team:r.team||'',teams:r.teams||[]}));
-    if(equipo)EQ.empleados=equipo.map(r=>({id:r.id,nom:r.nom,area:r.area,puesto:r.puesto,team:r.team,salTipo:r.sal_tipo,salFijo:parseFloat(r.sal_fijo),salPct:parseFloat(r.sal_pct),salTecho:parseFloat(r.sal_techo),salMods:r.sal_mods,salHora:parseFloat(r.sal_hora||2)}));
+    if(equipo)EQ.empleados=equipo.map(r=>({id:r.id,nom:r.nom,area:r.area,puesto:r.puesto,team:r.team,salBase:r.sal_tipo||'total',salFijo:parseFloat(r.sal_fijo||0),salPct:parseFloat(r.sal_pct||0),salTecho:parseFloat(r.sal_techo||0),salMods:r.sal_mods||'',salHora:parseFloat(r.sal_hora||0)}));
     if(config){const cfgMap={};config.forEach(c=>{cfgMap[c.key]=c.value;});if(cfgMap.puestos)EQ.puestos=cfgMap.puestos;if(cfgMap.teams)EQ.teams=cfgMap.teams;if(cfgMap.nichos)NICHOS=cfgMap.nichos;if(cfgMap.cats)CATS=cfgMap.cats;if(cfgMap.objetivo)OBJ=cfgMap.objetivo;if(cfgMap.usuarios)USERS=cfgMap.usuarios;}
     hideLoader();return true;
   }catch(e){hideLoader();console.error('Error Supabase:',e);notif('Error conectando con la base de datos','er');return false;}
@@ -1212,32 +1219,28 @@ function calcModelo(mod,facturado){
 }
 
 // ═══════════════════════════════════════════════════
-// PAGO EMPLEADO — incluye por-hora
+// PAGO EMPLEADO — sistema combinado (fijo + hora + comisión)
 // ═══════════════════════════════════════════════════
 function calcEmpleado(emp,mes){
   const facTodo=fpms(DB.fac,mes);
-  const esChatting=emp.area==='Chatting';
-  const fac=esChatting?facTodo.filter(x=>x.tipo==='Chatting'):facTodo;
-  const totalFac=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const tipoLabel=esChatting?'chatting':'total';
-  const st=emp.salTipo||'fijo';
-  let total=0,base=0,desc='';
-  if(st==='fijo'){total=parseFloat(emp.salFijo||0);desc=`Fijo: ${fmt(total)}/mes`;}
-  else if(st==='por-hora'){
-    // Para chatters por hora: la cantidad de horas se registra manualmente en cada ingreso.
-    // Aquí mostramos la tarifa; el cálculo real viene de los registros de horas.
-    const tarifa=parseFloat(emp.salHora||2);
-    desc=`Por hora: $${tarifa} USD/hora (horas según registros)`;
-    // Buscamos registros de horas de este chatter en este mes
-    const registrosHoras=fpms(DB.fac,mes).filter(x=>x.chatter===emp.nom&&x.horas>0);
-    const totalHoras=registrosHoras.reduce((s,x)=>s+parseFloat(x.horas||0),0);
-    total=totalHoras*tarifa;
-    if(totalHoras>0)desc=`${totalHoras} hs × $${tarifa}/hora = ${fmt(total)}`;
-  }
-  else if(st==='pct-total'){const pct=parseFloat(emp.salPct||0);total=totalFac*pct/100;base=totalFac;desc=`${pct}% de ${fmt(totalFac)} (${tipoLabel})`;}
-  else if(st==='pct-modelos'){const pct=parseFloat(emp.salPct||0);const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);const facMods=fac.filter(x=>mods.includes(x.modelo)).reduce((s,x)=>s+parseFloat(x.monto||0),0);total=facMods*pct/100;base=facMods;desc=`${pct}% de ${fmt(facMods)} (${mods.join(', ')})`;}
-  else if(st==='pct-techo'){const pct=parseFloat(emp.salPct||0);const techo=parseFloat(emp.salTecho||Infinity);const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);let facBase;if(mods.length>0){facBase=fac.filter(x=>mods.includes(x.modelo)).reduce((s,x)=>s+parseFloat(x.monto||0),0);}else{facBase=totalFac;}const baseEfectiva=Math.min(facBase,techo);total=baseEfectiva*pct/100;base=facBase;desc=`${pct}% de ${fmt(baseEfectiva)}${facBase>techo?` (techo $${techo.toLocaleString()})`:''}`;if(mods.length)desc+=` (${mods.join(', ')})`;}
-  return{total,base,desc};
+  const base=emp.salBase||'total'; // 'total'|'modelos'|'chatting'
+  let facBase;
+  if(base==='chatting'){facBase=facTodo.filter(x=>x.tipo==='Chatting');}
+  else if(base==='modelos'){const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);facBase=mods.length>0?facTodo.filter(x=>mods.includes(x.modelo)):facTodo;}
+  else{facBase=facTodo;}
+  const totalFac=facBase.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  let total=0;const partes=[];
+  // Fijo
+  const fijo=parseFloat(emp.salFijo||0);
+  if(fijo>0){total+=fijo;partes.push(`Fijo ${fmt(fijo)}/mes`);}
+  // Por hora
+  const tarifa=parseFloat(emp.salHora||0);
+  if(tarifa>0){const registrosHoras=fpms(DB.fac,mes).filter(x=>x.chatter===emp.nom&&parseFloat(x.horas||0)>0);const totalHoras=registrosHoras.reduce((s,x)=>s+parseFloat(x.horas||0),0);const montoHoras=totalHoras*tarifa;total+=montoHoras;partes.push(`${totalHoras}hs × $${tarifa}/h = ${fmt(montoHoras)}`);}
+  // Comisión %
+  const pct=parseFloat(emp.salPct||0);
+  if(pct>0){const techo=parseFloat(emp.salTecho||0);const baseEf=techo>0?Math.min(totalFac,techo):totalFac;const montoC=baseEf*pct/100;total+=montoC;let dc=`${pct}% de ${fmt(baseEf)}`;if(techo>0&&totalFac>techo)dc+=` (techo ${fmt(techo)})`;if(base==='modelos'){const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);if(mods.length)dc+=` (${mods.join(', ')})`;} else if(base==='chatting')dc+=' (chatting)';partes.push(dc);}
+  const desc=partes.length?partes.join(' + '):'Sin sueldo configurado';
+  return{total,base:totalFac,desc};
 }
 
 // ═══════════════════════════════════════════════════
@@ -1553,8 +1556,8 @@ function rPagos(){
   const totalEd=edData.reduce((s,e)=>s+e.total,0);
   $('pag-ttl-ed').textContent='Total: '+fmt(totalEd);
   $('pag-wg-ed').innerHTML=edData.map(e=>{const k=pkKey(mes,'ed',e.nom);const pg=DB.pagPagos[k];return`<div class="wc ${pg?'ok':''}"><div class="wn">${e.nom}</div><div class="wr">${e.puesto}</div><div class="wa">${fmt(e.total)}</div><div class="wd">${e.desc}</div></div>`;}).join('')||'<div class="emp" style="grid-column:span 4">Sin empleados de este tipo</div>';
-  const stLbl={fijo:'Fijo','por-hora':'Por hora','pct-total':'% Total','pct-modelos':'% Modelos','pct-techo':'% c/techo'};
-  $('pag-tb-ed').innerHTML=edData.map(e=>{const k=pkKey(mes,'ed',e.nom);const pg=DB.pagPagos[k];return`<tr><td class="b">${e.nom}</td><td><span class="tag tp">${e.puesto}</span></td><td><span class="tag tgr">${stLbl[e.salTipo||'fijo']}</span></td><td style="font-size:10px;color:var(--t2)">${e.desc}</td><td style="color:var(--ye);font-weight:700">${fmt(e.total)}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar pagado'}</button></td></tr>`;}).join('')||'<tr><td colspan="7" class="emp">Sin empleados</td></tr>';
+  const stLbl={};
+  $('pag-tb-ed').innerHTML=edData.map(e=>{const k=pkKey(mes,'ed',e.nom);const pg=DB.pagPagos[k];return`<tr><td class="b">${e.nom}</td><td><span class="tag tp">${e.puesto}</span></td><td style="font-size:10px;color:var(--t2)">${e.desc}</td><td style="color:var(--ye);font-weight:700">${fmt(e.total)}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar pagado'}</button></td></tr>`;}).join('')||'<tr><td colspan="6" class="emp">Sin empleados</td></tr>';
   const modMap={};fac.forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
   const modData=Object.entries(modMap).map(([nom,facturado])=>{const mod=getModByNom(nom);const res=calcModelo(mod,facturado);const gCargo=res.pagaGastos?totalGas*0.5:0;return{nom,nicho:mod?.nicho||'—',facturado,res,gCargo,totalNeto:res.pago+gCargo};});
   const totalMod=modData.reduce((s,m)=>s+m.totalNeto,0);
@@ -1599,7 +1602,7 @@ function rRep(){
 // IA
 // ═══════════════════════════════════════════════════
 function rIA(){updSnap();updAlerts();}
-function buildCtx(){const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);const mm={};fac.forEach(x=>{mm[x.modelo]=(mm[x.modelo]||0)+parseFloat(x.monto||0);});const anio=periodo.split('-')[0];const facA=Array.from({length:12},(_,i)=>fpms(DB.fac,`${anio}-${String(i+1).padStart(2,'0')}`).reduce((s,x)=>s+parseFloat(x.monto||0),0)).reduce((s,v)=>s+v,0);return`Sos asesor financiero de WHYnot Creators, agencia de chatting OnlyFans.\nPeríodo: ${getPL(periodo)} | Fac: ${fmt(tF)} | Gastos: ${fmt(tG)} | Neta: ${fmt(tF-tG)} | Margen: ${tF>0?fmtP(((tF-tG)/tF)*100):'N/A'}\nPor modelo: ${JSON.stringify(mm)}\nObjetivo ${anio}: ${fmt(OBJ.meta)} | Acumulado: ${fmt(facA)} (${fmtP((facA/OBJ.meta)*100)})\nModelos: ${MODS.map(m=>`${m.nom}(${m.nicho||'?'},${m.tipo}${m.tipo==='fijo'?':'+m.pct+'%':' escalonado'})`).join(', ')}\nEmpleados: ${EQ.empleados.map(e=>`${e.nom}(${e.puesto},${e.salTipo})`).join(', ')}\nRespondé en español, conciso y con datos exactos.`;}
+function buildCtx(){const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);const mm={};fac.forEach(x=>{mm[x.modelo]=(mm[x.modelo]||0)+parseFloat(x.monto||0);});const anio=periodo.split('-')[0];const facA=Array.from({length:12},(_,i)=>fpms(DB.fac,`${anio}-${String(i+1).padStart(2,'0')}`).reduce((s,x)=>s+parseFloat(x.monto||0),0)).reduce((s,v)=>s+v,0);return`Sos asesor financiero de WHYnot Creators, agencia de chatting OnlyFans.\nPeríodo: ${getPL(periodo)} | Fac: ${fmt(tF)} | Gastos: ${fmt(tG)} | Neta: ${fmt(tF-tG)} | Margen: ${tF>0?fmtP(((tF-tG)/tF)*100):'N/A'}\nPor modelo: ${JSON.stringify(mm)}\nObjetivo ${anio}: ${fmt(OBJ.meta)} | Acumulado: ${fmt(facA)} (${fmtP((facA/OBJ.meta)*100)})\nModelos: ${MODS.map(m=>`${m.nom}(${m.nicho||'?'},${m.tipo}${m.tipo==='fijo'?':'+m.pct+'%':' escalonado'})`).join(', ')}\nEmpleados: ${EQ.empleados.map(e=>`${e.nom}(${e.puesto},${e.salBase||'total'})`).join(', ')}\nRespondé en español, conciso y con datos exactos.`;}
 function updSnap(){const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);$('ai-snap').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">${[['Período',getPL(periodo),'var(--gr)'],['Facturación',fmt(tF),'var(--gr)'],['Gastos',fmt(tG),'var(--re)'],['Neta',fmt(tF-tG),(tF-tG)>=0?'var(--gr)':'var(--re)'],['Margen',tF>0?fmtP(((tF-tG)/tF)*100):'—','var(--ye)'],['Modelos',MODS.length,'var(--t2)'],['Empleados',EQ.empleados.length,'var(--t2)']].map(([l,v,c])=>`<div style="font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)">${l}</div><div style="font-size:11px;font-weight:600;color:${c}">${v}</div>`).join('')}</div>`;}
 function updAlerts(){const fac=fpms(DB.fac,periodo),gas=fpm(DB.gastos,periodo);const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);const al=[];if(!fac.length)al.push({i:'i',m:'Sin facturación en este período.'});if(tG>tF&&tF>0)al.push({i:'!',m:'Los gastos superan la facturación.'});if(tF>0&&tG/tF>.7)al.push({i:'!',m:'Ratio gastos/facturación mayor al 70%.'});if(!MODS.length)al.push({i:'i',m:'No hay modelos configuradas. Andá a Modelos.'});if(!EQ.empleados.length)al.push({i:'i',m:'No hay empleados configurados. Andá a Equipo.'});$('ai-alr').innerHTML=al.length?al.map(a=>`<div style="display:flex;gap:6px;padding:6px 0;border-bottom:1px solid var(--br);align-items:flex-start"><span style="flex-shrink:0;font-weight:700;color:var(--ye)">${a.i}</span><span style="font-size:10px;color:var(--t2);line-height:1.6">${a.m}</span></div>`).join(''):'<div style="font-size:10px;color:var(--gr);padding:6px 0">Sin alertas.</div>';}
 async function sendAI(){const inp=$('ai-in');const msg=inp.value.trim();if(!msg)return;inp.value='';appAI('u',msg);aiHist.push({role:'user',content:msg});const tid='t'+Date.now(),msgs=$('ams');const d=document.createElement('div');d.className='am a';d.id=tid;d.innerHTML='<div class="aav">AI</div><div class="amb"><div class="atyp"><span></span><span></span><span></span></div></div>';msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildCtx(),messages:aiHist})});const dt=await r.json();$(tid)?.remove();const rp=dt.content?.[0]?.text||'Sin respuesta.';aiHist.push({role:'assistant',content:rp});appAI('a',rp);}catch(e){$(tid)?.remove();appAI('a','Error de conexión.');}}
@@ -1654,16 +1657,14 @@ function rPuestos(){const flt=$('puesto-area-flt')?.value||'';const lista=getPue
 function renderEmpTb(){
   const fa=$('emp-flt-area')?.value||'',fp=$('emp-flt-puesto')?.value||'',ft=$('emp-flt-team')?.value||'',fn=($('emp-flt-nom')?.value||'').toLowerCase().trim();
   let data=EQ.empleados.slice();if(fa)data=data.filter(e=>e.area===fa);if(fp)data=data.filter(e=>e.puesto===fp);if(ft)data=data.filter(e=>e.team===ft);if(fn)data=data.filter(e=>e.nom.toLowerCase().includes(fn));
-  const stLbl={fijo:'Fijo','por-hora':'Por hora','pct-total':'% Total','pct-modelos':'% Modelos','pct-techo':'% c/techo'};
   $('emp-tb').innerHTML=data.length?data.map(e=>{
-    let det='';
-    if(e.salTipo==='fijo')det=`${fmt(e.salFijo||0)}/mes`;
-    else if(e.salTipo==='por-hora')det=`$${e.salHora||2}/hora`;
-    else if(e.salTipo==='pct-total')det=`${e.salPct}% del total`;
-    else if(e.salTipo==='pct-modelos')det=`${e.salPct}% de: ${e.salMods||'todas'}`;
-    else if(e.salTipo==='pct-techo')det=`${e.salPct}% (techo $${(e.salTecho||0).toLocaleString()}) de: ${e.salMods||'total'}`;
-    return`<tr><td class="b">${e.nom}</td><td><span class="tag tgr">${e.area||'—'}</span></td><td><span class="tag ${e.puesto==='Team Leader'?'ty':e.puesto==='Chatter'?'tb':'tp'}">${e.puesto}</span></td><td>${e.team||'—'}</td><td><span class="tag tgr">${stLbl[e.salTipo||'fijo']}</span></td><td style="font-size:10px;color:var(--t2)">${det}</td><td><div style="display:flex;gap:5px"><button class="btn bg bs" onclick="openEmp('${e.id}')">Editar</button><button class="btn bd2 bs" onclick="delEmp('${e.id}')">x</button></div></td></tr>`;
-  }).join(''):`<tr><td colspan="7" class="emp">Sin empleados${fa||fp||ft||fn?' con estos filtros':''}</td></tr>`;
+    const partes=[];
+    if(parseFloat(e.salFijo||0)>0)partes.push(`Fijo ${fmt(e.salFijo)}/mes`);
+    if(parseFloat(e.salHora||0)>0)partes.push(`$${e.salHora}/h`);
+    if(parseFloat(e.salPct||0)>0){let d=`${e.salPct}%`;if(e.salBase==='modelos')d+=` mods`;else if(e.salBase==='chatting')d+=` chat`;if(parseFloat(e.salTecho||0)>0)d+=` (techo ${fmt(e.salTecho)})`;partes.push(d);}
+    const det=partes.join(' + ')||'—';
+    return`<tr><td class="b">${e.nom}</td><td><span class="tag tgr">${e.area||'—'}</span></td><td><span class="tag ${e.puesto==='Team Leader'?'ty':e.puesto==='Chatter'?'tb':'tp'}">${e.puesto}</span></td><td>${e.team||'—'}</td><td style="font-size:10px;color:var(--t2)">${det}</td><td><div style="display:flex;gap:5px"><button class="btn bg bs" onclick="openEmp('${e.id}')">Editar</button><button class="btn bd2 bs" onclick="delEmp('${e.id}')">x</button></div></td></tr>`;
+  }).join(''):`<tr><td colspan="6" class="emp">Sin empleados${fa||fp||ft||fn?' con estos filtros':''}</td></tr>`;
 }
 async function addPuesto(){const nom=$('puesto-inp').value.trim(),area=$('puesto-area-sel').value;if(!nom){notif('Ingresá el nombre del puesto','er');return;}const puestos=EQ.puestos||[];const norm=puestos.map(p=>typeof p==='string'?{nom:p,area:''}:p);if(norm.find(p=>p.nom===nom)){notif('Ya existe','er');return;}norm.push({nom,area});EQ.puestos=norm;await sEQ_puestos();$('puesto-inp').value='';rEquipo();notif('Puesto agregado');}
 async function delPuesto(n){const norm=(EQ.puestos||[]).map(p=>typeof p==='string'?{nom:p,area:''}:p);EQ.puestos=norm.filter(p=>p.nom!==n);await sEQ_puestos();rEquipo();}
@@ -1671,24 +1672,23 @@ async function addTeam(){const v=$('team-inp').value.trim();if(!v)return;if(!EQ.
 async function delTeam(t){EQ.teams=EQ.teams.filter(x=>x!==t);await sEQ_teams();rEquipo();}
 function updEmpArea(){const area=$('emp-area').value;const puestos=getPuestoNoms(area);$('emp-puesto').innerHTML='<option value="">— Puesto —</option>'+puestos.map(p=>`<option value="${p.nom}">${p.nom}</option>`).join('');$('emp-team-w').style.display='none';}
 function updEmpPuesto(){const p=$('emp-puesto').value;$('emp-team-w').style.display=p==='Chatter'?'flex':'none';}
-function updEmpSal(){
-  const t=$('emp-sal-tipo').value;
-  $('emp-sal-fijo-w').style.display=t==='fijo'?'flex':'none';
-  $('emp-sal-hora-w').style.display=t==='por-hora'?'flex':'none';
-  $('emp-sal-pct-w').style.display=(t==='pct-total'||t==='pct-modelos'||t==='pct-techo')?'flex':'none';
-  $('emp-sal-techo-w').style.display=t==='pct-techo'?'flex':'none';
-  $('emp-sal-mods-w').style.display=(t==='pct-modelos'||t==='pct-techo')?'flex':'none';
+function updEmpSalBase(){
+  const v=document.querySelector('input[name="emp-sal-base"]:checked')?.value||'total';
+  $('emp-sal-mods-w').style.display=v==='modelos'?'flex':'none';
 }
 async function addEmp(){
   const nom=$('emp-nom').value.trim(),puesto=$('emp-puesto').value,area=$('emp-area').value;
   if(!nom||!puesto){notif('Nombre y puesto requeridos','er');return;}
-  const st=$('emp-sal-tipo').value;
+  const salBase=document.querySelector('input[name="emp-sal-base"]:checked')?.value||'total';
   const modsSel=$('emp-sal-mods');const salMods=modsSel?Array.from(modsSel.selectedOptions).map(o=>o.value).join(','):'';
-  const salHora=parseFloat($('emp-sal-hora')?.value||2);
-  const emp={id:uid(),nom,area,puesto,team:$('emp-team').value,salTipo:st,salFijo:parseFloat($('emp-sal-fijo').value||0),salHora,salPct:parseFloat($('emp-sal-pct').value||0),salTecho:parseFloat($('emp-sal-techo').value||0),salMods};
+  const emp={id:uid(),nom,area,puesto,team:$('emp-team').value,
+    salBase,salFijo:parseFloat($('emp-sal-fijo').value||0),
+    salHora:parseFloat($('emp-sal-hora').value||0),
+    salPct:parseFloat($('emp-sal-pct').value||0),
+    salTecho:parseFloat($('emp-sal-techo').value||0),salMods};
   EQ.empleados.push(emp);await sEQ();
-  $('emp-nom').value='';$('emp-sal-fijo').value='';$('emp-sal-pct').value='';$('emp-sal-techo').value='';
-  if($('emp-sal-hora'))$('emp-sal-hora').value='';
+  $('emp-nom').value='';$('emp-sal-fijo').value='';$('emp-sal-pct').value='';
+  $('emp-sal-techo').value='';$('emp-sal-hora').value='';
   if(modsSel)Array.from(modsSel.options).forEach(o=>o.selected=false);
   rEquipo();notif('Empleado guardado');
 }
@@ -1701,29 +1701,33 @@ function openEmp(id){
   $('ee-puesto').innerHTML='<option value="">—</option>'+puestosFiltrados.map(p=>`<option value="${p.nom}"${e.puesto===p.nom?' selected':''}>${p.nom}</option>`).join('');
   $('ee-team').innerHTML='<option value="">—</option>'+EQ.teams.map(t=>`<option${e.team===t?' selected':''}>${t}</option>`).join('');
   $('ee-team-w').style.display=e.puesto==='Chatter'?'flex':'none';
-  $('ee-sal-tipo').value=e.salTipo||'fijo';updEeSal();
   $('ee-fijo').value=e.salFijo||'';
-  if($('ee-hora'))$('ee-hora').value=e.salHora||2;
-  $('ee-pct').value=e.salPct||'';$('ee-techo').value=e.salTecho||'';
+  $('ee-hora').value=e.salHora||'';
+  $('ee-pct').value=e.salPct||'';
+  $('ee-techo').value=e.salTecho||'';
+  // radio base
+  const base=e.salBase||'total';
+  const rb=document.getElementById(`ee-sal-base-${base}`);
+  if(rb)rb.checked=true;
+  $('ee-mods-w').style.display=base==='modelos'?'flex':'none';
   const eeMods=$('ee-mods');const selMods=(e.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
   if(eeMods)eeMods.innerHTML=MODS.map(m=>`<option value="${m.nom}"${selMods.includes(m.nom)?' selected':''}>${m.nom} (${m.nicho||'—'})</option>`).join('');
   $('emp-modal').classList.add('on');
 }
 function updEeArea(){const area=$('ee-area').value;const puestos=getPuestoNoms(area);$('ee-puesto').innerHTML='<option value="">—</option>'+puestos.map(p=>`<option value="${p.nom}">${p.nom}</option>`).join('');$('ee-team-w').style.display='none';}
 function updEePuesto(){const p=$('ee-puesto').value;$('ee-team-w').style.display=p==='Chatter'?'flex':'none';}
-function updEeSal(){
-  const t=$('ee-sal-tipo').value;
-  $('ee-fijo-w').style.display=t==='fijo'?'flex':'none';
-  $('ee-hora-w').style.display=t==='por-hora'?'flex':'none';
-  $('ee-pct-w').style.display=(t==='pct-total'||t==='pct-modelos'||t==='pct-techo')?'flex':'none';
-  $('ee-techo-w').style.display=t==='pct-techo'?'flex':'none';
-  $('ee-mods-w').style.display=(t==='pct-modelos'||t==='pct-techo')?'flex':'none';
+function updEeSalBase(){
+  const v=document.querySelector('input[name="ee-sal-base"]:checked')?.value||'total';
+  $('ee-mods-w').style.display=v==='modelos'?'flex':'none';
 }
 async function saveEe(){
   const id=$('ee-id').value,idx=EQ.empleados.findIndex(x=>x.id===id);if(idx<0)return;
   const eeMods=$('ee-mods');const salMods=eeMods?Array.from(eeMods.selectedOptions).map(o=>o.value).join(','):'';
-  const salHora=parseFloat($('ee-hora')?.value||2);
-  EQ.empleados[idx]={...EQ.empleados[idx],nom:$('ee-nom').value.trim(),area:$('ee-area').value,puesto:$('ee-puesto').value,team:$('ee-team').value,salTipo:$('ee-sal-tipo').value,salFijo:parseFloat($('ee-fijo').value||0),salHora,salPct:parseFloat($('ee-pct').value||0),salTecho:parseFloat($('ee-techo').value||0),salMods};
+  const salBase=document.querySelector('input[name="ee-sal-base"]:checked')?.value||'total';
+  EQ.empleados[idx]={...EQ.empleados[idx],
+    nom:$('ee-nom').value.trim(),area:$('ee-area').value,puesto:$('ee-puesto').value,team:$('ee-team').value,
+    salBase,salFijo:parseFloat($('ee-fijo').value||0),salHora:parseFloat($('ee-hora').value||0),
+    salPct:parseFloat($('ee-pct').value||0),salTecho:parseFloat($('ee-techo').value||0),salMods};
   await sEQ();clsEmpMod();rEquipo();notif('Actualizado');
 }
 function clsEmpMod(){$('emp-modal').classList.remove('on');}
@@ -1733,8 +1737,10 @@ function clsEmpMod(){$('emp-modal').classList.remove('on');}
 // ═══════════════════════════════════════════════════
 function rCfg(){
   $('cfg-meta').value=OBJ.meta;$('cfg-anio').value=OBJ.anio;rCfgUsers();
-  const stDesc={fijo:'Fijo mensual','por-hora':'Por hora','pct-total':'% del total facturado','pct-modelos':'% de modelos específicas','pct-techo':'% con techo'};
-  $('cfg-formulas').innerHTML=EQ.empleados.map(e=>`<div style="padding:5px 0;border-bottom:1px solid var(--br);display:flex;justify-content:space-between"><span style="color:var(--tx)">${e.nom} <span style="font-size:9px;color:var(--t3)">(${e.puesto})</span></span><span style="font-size:10px;color:var(--t2)">${stDesc[e.salTipo||'fijo']}${e.salTipo==='por-hora'?' @ $'+(e.salHora||2)+'/h':''}</span></div>`).join('')||'<div style="color:var(--t3);font-size:10px">Sin empleados configurados</div>';
+  $('cfg-formulas').innerHTML=EQ.empleados.map(e=>{
+    const res=calcEmpleado(e,periodo);
+    return`<div style="padding:5px 0;border-bottom:1px solid var(--br);display:flex;justify-content:space-between"><span style="color:var(--tx)">${e.nom} <span style="font-size:9px;color:var(--t3)">(${e.puesto})</span></span><span style="font-size:10px;color:var(--t2)">${res.desc}</span></div>`;
+  }).join('')||'<div style="color:var(--t3);font-size:10px">Sin empleados configurados</div>';
 }
 async function saveCfg(){OBJ.meta=parseFloat($('cfg-meta').value)||100000;OBJ.anio=parseInt($('cfg-anio').value)||2026;await sOJ();notif('Config guardada');}
 
