@@ -943,41 +943,41 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div class="fr"><label>Puesto</label><select id="emp-puesto" onchange="updEmpPuesto()"><option value="">— Primero elegir área —</option></select></div>
           <div class="fr" id="emp-team-w" style="display:none"><label>Team</label><select id="emp-team" onchange="onEmpTeamChange()"><option value="">— Seleccionar —</option></select></div>
         </div>
-        <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;margin-top:2px">Estructura Salarial — podés combinar</div>
-        <div class="fg f4" style="margin-bottom:9px">
-          <div class="fr"><label>Fijo mensual (USD)</label><input type="number" id="emp-sal-fijo" placeholder="0 = no aplica" min="0"></div>
-          <div class="fr"><label>Tarifa por hora (USD)</label><input type="number" id="emp-sal-hora" placeholder="0 = no aplica" min="0" step="0.5"></div>
-          <div class="fr"><label>Comisión (%)</label><input type="number" id="emp-sal-pct" placeholder="0 = no aplica" min="0" max="100" step="0.1" oninput="onEmpPctChange()"></div>
+        <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;margin-top:2px">Estructura Salarial</div>
+        <div class="fg f3" style="margin-bottom:10px">
+          <!-- Tipo de sueldo -->
+          <div class="fr">
+            <label>Tipo de sueldo</label>
+            <select id="emp-sal-tipo" onchange="updEmpSalTipo()">
+              <option value="fijo">Fijo mensual</option>
+              <option value="hora">Por hora</option>
+              <option value="comision">Comisión</option>
+              <option value="fijo+comision">Fijo + Comisión</option>
+              <option value="hora+comision">Por hora + Comisión</option>
+            </select>
+          </div>
+          <!-- Monto fijo — visible si tiene fijo -->
+          <div class="fr" id="emp-sal-fijo-w" style="display:none"><label>Monto fijo (USD/mes)</label><input type="number" id="emp-sal-fijo" placeholder="500" min="0"></div>
+          <!-- Tarifa hora — visible si tiene hora -->
+          <div class="fr" id="emp-sal-hora-w" style="display:none"><label>Tarifa por hora (USD)</label><input type="number" id="emp-sal-hora" placeholder="2" min="0" step="0.5"></div>
+          <!-- Comisión % — visible si tiene comisión -->
+          <div class="fr" id="emp-sal-pct-w" style="display:none"><label>Comisión (%)</label><input type="number" id="emp-sal-pct" placeholder="8" min="0" max="100" step="0.1"></div>
+          <!-- Techo — visible si tiene comisión -->
           <div class="fr" id="emp-sal-techo-w" style="display:none"><label>Techo comisión (USD)</label><input type="number" id="emp-sal-techo" placeholder="0 = sin techo" min="0"></div>
         </div>
-        <!-- Sección base de comisión — solo visible si comisión > 0 -->
-        <div id="emp-sal-com-w" style="display:none;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:10px">
-          <div style="font-size:8px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px">Base de comisión</div>
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
-              <input type="radio" name="emp-sal-base" id="emp-sal-base-total" value="total" checked onchange="updEmpSalBase()"> Total facturado
-            </label>
-            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
-              <input type="radio" name="emp-sal-base" id="emp-sal-base-mods" value="modelos" onchange="updEmpSalBase()"> Modelos específicas
-            </label>
-            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
-              <input type="radio" name="emp-sal-base" id="emp-sal-base-chat" value="chatting" onchange="updEmpSalBase()"> Solo Chatting
-            </label>
+        <!-- Modelos relacionadas — siempre visible, separado del sueldo -->
+        <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Modelos relacionadas</div>
+        <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px">
+          <div class="fr" style="min-width:150px">
+            <label>Filtrar por nicho</label>
+            <select id="emp-sal-nicho" onchange="onEmpSalNicho()" style="background:var(--s2);border:1px solid var(--br);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:7px 10px;outline:none;width:100%;">
+              <option value="">— Todos los nichos —</option>
+            </select>
           </div>
-          <div id="emp-sal-mods-w" style="display:none">
-            <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
-              <div class="fr" style="min-width:150px">
-                <label>Filtrar por nicho</label>
-                <select id="emp-sal-nicho" onchange="onEmpSalNicho()" style="background:var(--sf);border:1px solid var(--br);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:7px 10px;outline:none;width:100%;">
-                  <option value="">— Todos los nichos —</option>
-                </select>
-              </div>
-              <div class="fr" style="min-width:180px;flex:1">
-                <label>Modelos</label>
-                <select id="emp-sal-mods" multiple style="height:90px;background:var(--sf);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select>
-                <div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias</div>
-              </div>
-            </div>
+          <div class="fr" style="min-width:200px;flex:1">
+            <label>Modelos (todas si ninguna seleccionada)</label>
+            <select id="emp-sal-mods" multiple style="height:90px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select>
+            <div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias · Sin selección = todas</div>
           </div>
         </div>
         <button class="btn bp" onclick="addEmp()">+ Guardar Empleado</button>
@@ -1065,40 +1065,34 @@ tbody td.b{color:var(--tx);font-weight:500;}
       <div class="fr"><label>Puesto</label><select id="ee-puesto" onchange="updEePuesto()"><option value="">—</option></select></div>
       <div class="fr" id="ee-team-w" style="display:none"><label>Team</label><select id="ee-team"><option value="">—</option></select></div>
     </div>
-    <div class="fr" style="margin-bottom:8px;font-size:8px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase">Estructura Salarial — podés combinar</div>
-    <div class="fg f2" style="margin-bottom:8px">
-      <div class="fr"><label>Fijo mensual (USD)</label><input type="number" id="ee-fijo" placeholder="0 = no aplica" min="0"></div>
-      <div class="fr"><label>Tarifa por hora (USD)</label><input type="number" id="ee-hora" placeholder="0 = no aplica" min="0" step="0.5"></div>
-      <div class="fr"><label>Comisión (%)</label><input type="number" id="ee-pct" placeholder="0 = no aplica" min="0" max="100" step="0.1" oninput="onEePctChange()"></div>
+    <div class="fr" style="margin-bottom:10px"><label>Tipo de sueldo</label>
+      <select id="ee-sal-tipo" onchange="updEeSalTipo()">
+        <option value="fijo">Fijo mensual</option>
+        <option value="hora">Por hora</option>
+        <option value="comision">Comisión</option>
+        <option value="fijo+comision">Fijo + Comisión</option>
+        <option value="hora+comision">Por hora + Comisión</option>
+      </select>
+    </div>
+    <div class="fg f3" style="margin-bottom:10px">
+      <div class="fr" id="ee-fijo-w" style="display:none"><label>Monto fijo (USD/mes)</label><input type="number" id="ee-fijo" placeholder="500" min="0"></div>
+      <div class="fr" id="ee-hora-w" style="display:none"><label>Tarifa por hora (USD)</label><input type="number" id="ee-hora" placeholder="2" min="0" step="0.5"></div>
+      <div class="fr" id="ee-pct-w" style="display:none"><label>Comisión (%)</label><input type="number" id="ee-pct" placeholder="8" min="0" max="100" step="0.1"></div>
       <div class="fr" id="ee-techo-w" style="display:none"><label>Techo comisión (USD)</label><input type="number" id="ee-techo" placeholder="0 = sin techo" min="0"></div>
     </div>
-    <div id="ee-com-w" style="display:none;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:8px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px">Base de comisión</div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
-          <input type="radio" name="ee-sal-base" id="ee-sal-base-total" value="total" checked onchange="updEeSalBase()"> Total facturado
-        </label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
-          <input type="radio" name="ee-sal-base" id="ee-sal-base-mods" value="modelos" onchange="updEeSalBase()"> Modelos específicas
-        </label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
-          <input type="radio" name="ee-sal-base" id="ee-sal-base-chat" value="chatting" onchange="updEeSalBase()"> Solo Chatting
-        </label>
+    <!-- Modelos relacionadas — siempre visible -->
+    <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Modelos relacionadas</div>
+    <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px">
+      <div class="fr" style="min-width:150px">
+        <label>Filtrar por nicho</label>
+        <select id="ee-sal-nicho" onchange="onEeSalNicho()" style="background:var(--s2);border:1px solid var(--br);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:7px 10px;outline:none;width:100%;">
+          <option value="">— Todos los nichos —</option>
+        </select>
       </div>
-      <div id="ee-mods-w" style="display:none">
-        <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
-          <div class="fr" style="min-width:150px">
-            <label>Filtrar por nicho</label>
-            <select id="ee-sal-nicho" onchange="onEeSalNicho()" style="background:var(--sf);border:1px solid var(--br);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:7px 10px;outline:none;width:100%;">
-              <option value="">— Todos los nichos —</option>
-            </select>
-          </div>
-          <div class="fr" style="min-width:180px;flex:1">
-            <label>Modelos</label>
-            <select id="ee-mods" multiple style="height:90px;background:var(--sf);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select>
-            <div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias</div>
-          </div>
-        </div>
+      <div class="fr" style="min-width:180px;flex:1">
+        <label>Modelos (todas si ninguna seleccionada)</label>
+        <select id="ee-mods" multiple style="height:90px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select>
+        <div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias · Sin selección = todas</div>
       </div>
     </div>
     <div class="mod-ft"><button class="btn bg" onclick="clsEmpMod()">Cancelar</button><button class="btn bp" onclick="saveEe()">Guardar</button></div>
@@ -1256,22 +1250,42 @@ function calcModelo(mod,facturado){
 // ═══════════════════════════════════════════════════
 function calcEmpleado(emp,mes){
   const facTodo=fpms(DB.fac,mes);
-  const base=emp.salBase||'total'; // 'total'|'modelos'|'chatting'
+  const salTipo=emp.salBase||'fijo'; // 'fijo'|'hora'|'comision'|'fijo+comision'|'hora+comision'
+  const tieneFijo=salTipo==='fijo'||salTipo==='fijo+comision';
+  const tieneHora=salTipo==='hora'||salTipo==='hora+comision';
+  const tieneComision=salTipo==='comision'||salTipo==='fijo+comision'||salTipo==='hora+comision';
+
+  // Base de facturación para comisión — depende de las modelos relacionadas
+  const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
   let facBase;
-  if(base==='chatting'){facBase=facTodo.filter(x=>x.tipo==='Chatting');}
-  else if(base==='modelos'){const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);facBase=mods.length>0?facTodo.filter(x=>mods.includes(x.modelo)):facTodo;}
+  if(mods.length>0){facBase=facTodo.filter(x=>mods.includes(x.modelo));}
   else{facBase=facTodo;}
   const totalFac=facBase.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+
   let total=0;const partes=[];
-  // Fijo
-  const fijo=parseFloat(emp.salFijo||0);
-  if(fijo>0){total+=fijo;partes.push(`Fijo ${fmt(fijo)}/mes`);}
-  // Por hora
-  const tarifa=parseFloat(emp.salHora||0);
-  if(tarifa>0){const registrosHoras=fpms(DB.fac,mes).filter(x=>x.chatter===emp.nom&&parseFloat(x.horas||0)>0);const totalHoras=registrosHoras.reduce((s,x)=>s+parseFloat(x.horas||0),0);const montoHoras=totalHoras*tarifa;total+=montoHoras;partes.push(`${totalHoras}hs × $${tarifa}/h = ${fmt(montoHoras)}`);}
-  // Comisión %
-  const pct=parseFloat(emp.salPct||0);
-  if(pct>0){const techo=parseFloat(emp.salTecho||0);const baseEf=techo>0?Math.min(totalFac,techo):totalFac;const montoC=baseEf*pct/100;total+=montoC;let dc=`${pct}% de ${fmt(baseEf)}`;if(techo>0&&totalFac>techo)dc+=` (techo ${fmt(techo)})`;if(base==='modelos'){const mods=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);if(mods.length)dc+=` (${mods.join(', ')})`;} else if(base==='chatting')dc+=' (chatting)';partes.push(dc);}
+
+  if(tieneFijo){const fijo=parseFloat(emp.salFijo||0);if(fijo>0){total+=fijo;partes.push(`Fijo ${fmt(fijo)}/mes`);}}
+  if(tieneHora){
+    const tarifa=parseFloat(emp.salHora||0);
+    if(tarifa>0){
+      const registrosHoras=fpms(DB.fac,mes).filter(x=>x.chatter===emp.nom&&parseFloat(x.horas||0)>0);
+      const totalHoras=registrosHoras.reduce((s,x)=>s+parseFloat(x.horas||0),0);
+      const montoHoras=totalHoras*tarifa;total+=montoHoras;
+      partes.push(`${totalHoras}hs × $${tarifa}/h = ${fmt(montoHoras)}`);
+    }
+  }
+  if(tieneComision){
+    const pct=parseFloat(emp.salPct||0);
+    if(pct>0){
+      const techo=parseFloat(emp.salTecho||0);
+      const baseEf=techo>0?Math.min(totalFac,techo):totalFac;
+      const montoC=baseEf*pct/100;total+=montoC;
+      let dc=`${pct}% de ${fmt(baseEf)}`;
+      if(techo>0&&totalFac>techo)dc+=` (techo ${fmt(techo)})`;
+      if(mods.length)dc+=` (${mods.join(', ')})`;
+      partes.push(dc);
+    }
+  }
   const desc=partes.length?partes.join(' + '):'Sin sueldo configurado';
   return{total,base:totalFac,desc};
 }
@@ -1674,7 +1688,10 @@ function rEquipo(){
   const ea=$('emp-area');if(ea)ea.innerHTML='<option value="">— Seleccionar —</option>'+AREAS.map(a=>`<option>${a}</option>`).join('');
   $('teams-list').innerHTML=EQ.teams.map(t=>`<div style="background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--tx);font-family:var(--sa);display:flex;align-items:center;gap:7px">${t}<span style="cursor:pointer;color:var(--re);font-size:14px;line-height:1;font-weight:400" onclick="delTeam('${t}')">x</span></div>`).join('');
   const et=$('emp-team');if(et)et.innerHTML='<option value="">— Seleccionar —</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
-  const esm=$('emp-sal-mods');if(esm)esm.innerHTML=MODS.map(m=>`<option value="${m.nom}">${m.nom} (${m.nicho||'—'})</option>`).join('');
+  // poblar nichos y modelos en el formulario nuevo
+  const sn=$('emp-sal-nicho');if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
+  onEmpSalNicho();
+  updEmpSalTipo();
   renderEmpTb();
 }
 function rAreas(){
@@ -1707,92 +1724,51 @@ function updEmpArea(){const area=$('emp-area').value;const puestos=getPuestoNoms
 function updEmpPuesto(){
   const p=$('emp-puesto').value;
   $('emp-team-w').style.display=p==='Chatter'?'flex':'none';
-  if(p==='Chatter'){
-    // si hay comisión configurada, pre-setear base a "modelos" y auto-poblar por team
-    const team=$('emp-team')?.value;
-    if(team)autoModsFromTeam(team,'emp-sal');
-  }
 }
-function autoModsFromTeam(team,prefix){
-  // Modelos del team seleccionado
-  const modsDelTeam=MODS.filter(m=>m.team===team||((m.teams||[]).includes(team)));
-  if(!modsDelTeam.length)return;
-  // Si hay comisión activa, pre-seleccionar estas modelos
-  const pct=parseFloat($(`${prefix}-pct`)?.value||0);
-  if(pct>0){
-    const sel=$(`${prefix}-mods`);
-    if(sel){
-      Array.from(sel.options).forEach(o=>{
-        o.selected=modsDelTeam.some(m=>m.nom===o.value);
-      });
-    }
-    // Marcar radio "modelos específicas"
-    const rb=$(`${prefix}-base-mods`);if(rb){rb.checked=true;updEmpSalBase();}
-  }
-  // Siempre mostrar las modelos del team en el select como pre-selección sugerida
-  const sel=$(`${prefix}-mods`);
-  if(sel&&sel.options.length>0){
-    Array.from(sel.options).forEach(o=>{
-      o.selected=modsDelTeam.some(m=>m.nom===o.value);
-    });
-  }
+
+// ─── Tipo de sueldo — formulario nuevo ───
+function updEmpSalTipo(){
+  const t=$('emp-sal-tipo').value;
+  const tieneFijo=t==='fijo'||t==='fijo+comision';
+  const tieneHora=t==='hora'||t==='hora+comision';
+  const tieneComision=t==='comision'||t==='fijo+comision'||t==='hora+comision';
+  $('emp-sal-fijo-w').style.display=tieneFijo?'flex':'none';
+  $('emp-sal-hora-w').style.display=tieneHora?'flex':'none';
+  $('emp-sal-pct-w').style.display=tieneComision?'flex':'none';
+  $('emp-sal-techo-w').style.display=tieneComision?'flex':'none';
+  if(!tieneComision){$('emp-sal-pct').value='';$('emp-sal-techo').value='';}
+  if(!tieneFijo)$('emp-sal-fijo').value='';
+  if(!tieneHora)$('emp-sal-hora').value='';
 }
-function onEmpPctChange(){
-  const pct=parseFloat($('emp-sal-pct')?.value||0);
-  const comW=$('emp-sal-com-w');
-  const techoW=$('emp-sal-techo-w');
-  if(pct>0){
-    if(comW)comW.style.display='block';
-    if(techoW)techoW.style.display='flex';
-  } else {
-    if(comW)comW.style.display='none';
-    if(techoW)techoW.style.display='none';
-    // resetear base a total
-    const rb=$('emp-sal-base-total');if(rb)rb.checked=true;
-    if($('emp-sal-mods-w'))$('emp-sal-mods-w').style.display='none';
-  }
-}
-function updEmpSalBase(){
-  const v=document.querySelector('input[name="emp-sal-base"]:checked')?.value||'total';
-  const w=$('emp-sal-mods-w');
-  if(v==='modelos'){
-    w.style.display='block';
-    const sn=$('emp-sal-nicho');
-    if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
-    onEmpSalNicho();
-  } else {
-    w.style.display='none';
-  }
-}
+
+// ─── Cascada nicho→modelo — formulario nuevo ───
 function onEmpSalNicho(){
   const nicho=$('emp-sal-nicho')?.value||'';
   const mods=nicho?MODS.filter(m=>m.nicho===nicho):MODS;
-  const sel=$('emp-sal-mods');
-  if(!sel)return;
+  const sel=$('emp-sal-mods');if(!sel)return;
   const selActual=Array.from(sel.selectedOptions||[]).map(o=>o.value);
   sel.innerHTML=mods.map(m=>`<option value="${m.nom}"${selActual.includes(m.nom)?' selected':''}>${m.nom}${m.nicho?' ('+m.nicho+')':''}</option>`).join('');
 }
-function onEePctChange(){
-  const pct=parseFloat($('ee-pct')?.value||0);
-  const comW=$('ee-com-w');
-  const techoW=$('ee-techo-w');
-  if(pct>0){
-    if(comW)comW.style.display='block';
-    if(techoW)techoW.style.display='flex';
-  } else {
-    if(comW)comW.style.display='none';
-    if(techoW)techoW.style.display='none';
-    const rb=$('ee-sal-base-total');if(rb)rb.checked=true;
-    if($('ee-mods-w'))$('ee-mods-w').style.display='none';
-  }
+
+// ─── Auto-poblar modelos al elegir team ───
+function onEmpTeamChange(){
+  const team=$('emp-team').value;if(!team)return;
+  const modsDelTeam=MODS.filter(m=>m.team===team||((m.teams||[]).includes(team)));
+  if(!modsDelTeam.length)return;
+  onEmpSalNicho(); // refrescar lista
+  const sel=$('emp-sal-mods');
+  if(sel)Array.from(sel.options).forEach(o=>{o.selected=modsDelTeam.some(m=>m.nom===o.value);});
 }
+
 async function addEmp(){
   const nom=$('emp-nom').value.trim(),puesto=$('emp-puesto').value,area=$('emp-area').value;
   if(!nom||!puesto){notif('Nombre y puesto requeridos','er');return;}
-  const salBase=document.querySelector('input[name="emp-sal-base"]:checked')?.value||'total';
-  const modsSel=$('emp-sal-mods');const salMods=modsSel?Array.from(modsSel.selectedOptions).map(o=>o.value).join(','):'';
+  const salTipo=$('emp-sal-tipo').value;
+  const modsSel=$('emp-sal-mods');
+  const salMods=modsSel?Array.from(modsSel.selectedOptions).map(o=>o.value).join(','):'';
   const emp={id:uid(),nom,area,puesto,team:$('emp-team').value,
-    salBase,salFijo:parseFloat($('emp-sal-fijo').value||0),
+    salBase:salTipo, // reutilizamos salBase para guardar el tipo
+    salFijo:parseFloat($('emp-sal-fijo').value||0),
     salHora:parseFloat($('emp-sal-hora').value||0),
     salPct:parseFloat($('emp-sal-pct').value||0),
     salTecho:parseFloat($('emp-sal-techo').value||0),salMods};
@@ -1800,9 +1776,12 @@ async function addEmp(){
   $('emp-nom').value='';$('emp-sal-fijo').value='';$('emp-sal-pct').value='';
   $('emp-sal-techo').value='';$('emp-sal-hora').value='';
   if(modsSel)Array.from(modsSel.options).forEach(o=>o.selected=false);
+  $('emp-sal-tipo').value='fijo';updEmpSalTipo();
   rEquipo();notif('Empleado guardado');
 }
 async function delEmp(id){EQ.empleados=EQ.empleados.filter(x=>x.id!==id);await sEQ_del(id);rEquipo();}
+
+// ─── Modal editar empleado ───
 function openEmp(id){
   const e=EQ.empleados.find(x=>x.id===id);if(!e)return;
   $('ee-id').value=id;$('ee-nom').value=e.nom;
@@ -1811,75 +1790,54 @@ function openEmp(id){
   $('ee-puesto').innerHTML='<option value="">—</option>'+puestosFiltrados.map(p=>`<option value="${p.nom}"${e.puesto===p.nom?' selected':''}>${p.nom}</option>`).join('');
   $('ee-team').innerHTML='<option value="">—</option>'+EQ.teams.map(t=>`<option${e.team===t?' selected':''}>${t}</option>`).join('');
   $('ee-team-w').style.display=e.puesto==='Chatter'?'flex':'none';
+  // tipo sueldo
+  const salTipo=e.salBase||'fijo';
+  $('ee-sal-tipo').value=salTipo;updEeSalTipo();
   $('ee-fijo').value=e.salFijo||'';
   $('ee-hora').value=e.salHora||'';
   $('ee-pct').value=e.salPct||'';
   $('ee-techo').value=e.salTecho||'';
-  // mostrar sección comisión solo si hay %
-  const hasPct=parseFloat(e.salPct||0)>0;
-  const comW=$('ee-com-w'),techoW=$('ee-techo-w');
-  if(comW)comW.style.display=hasPct?'block':'none';
-  if(techoW)techoW.style.display=hasPct?'flex':'none';
-  // radio base + cascada nicho→modelo
-  const base=e.salBase||'total';
-  const rb=document.getElementById(`ee-sal-base-${base}`);if(rb)rb.checked=true;
-  if(hasPct&&base==='modelos'){
-    $('ee-mods-w').style.display='block';
-    const sn=$('ee-sal-nicho');
-    if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
-    onEeSalNicho();
-    const eeMods=$('ee-mods');
-    const selMods=(e.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
-    if(eeMods)Array.from(eeMods.options).forEach(o=>{o.selected=selMods.includes(o.value);});
-  } else {
-    if($('ee-mods-w'))$('ee-mods-w').style.display='none';
-  }
+  // modelos relacionadas — poblar nicho y seleccionar guardadas
+  const sn=$('ee-sal-nicho');
+  if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
+  onEeSalNicho();
+  const eeMods=$('ee-mods');
+  const selMods=(e.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
+  if(eeMods)Array.from(eeMods.options).forEach(o=>{o.selected=selMods.includes(o.value);});
   $('emp-modal').classList.add('on');
 }
 function updEeArea(){const area=$('ee-area').value;const puestos=getPuestoNoms(area);$('ee-puesto').innerHTML='<option value="">—</option>'+puestos.map(p=>`<option value="${p.nom}">${p.nom}</option>`).join('');$('ee-team-w').style.display='none';}
 function updEePuesto(){const p=$('ee-puesto').value;$('ee-team-w').style.display=p==='Chatter'?'flex':'none';}
-function onEmpTeamChange(){
-  const team=$('emp-team').value;
-  if(!team)return;
-  // poblar modelos del team en el selector (si la sección está visible)
-  const modsDelTeam=MODS.filter(m=>m.team===team||((m.teams||[]).includes(team)));
-  if(!modsDelTeam.length)return;
-  // si la sección de comisión está visible, pre-seleccionar modelos del team
-  const comW=$('emp-sal-com-w');
-  if(comW&&comW.style.display!=='none'){
-    // asegurarse de estar en "modelos específicas"
-    const rb=$('emp-sal-base-mods');if(rb){rb.checked=true;updEmpSalBase();}
-    const sel=$('emp-sal-mods');
-    if(sel)Array.from(sel.options).forEach(o=>{o.selected=modsDelTeam.some(m=>m.nom===o.value);});
-  }
+
+// ─── Tipo de sueldo — modal editar ───
+function updEeSalTipo(){
+  const t=$('ee-sal-tipo').value;
+  const tieneFijo=t==='fijo'||t==='fijo+comision';
+  const tieneHora=t==='hora'||t==='hora+comision';
+  const tieneComision=t==='comision'||t==='fijo+comision'||t==='hora+comision';
+  $('ee-fijo-w').style.display=tieneFijo?'flex':'none';
+  $('ee-hora-w').style.display=tieneHora?'flex':'none';
+  $('ee-pct-w').style.display=tieneComision?'flex':'none';
+  $('ee-techo-w').style.display=tieneComision?'flex':'none';
 }
-function updEeSalBase(){
-  const v=document.querySelector('input[name="ee-sal-base"]:checked')?.value||'total';
-  const w=$('ee-mods-w');
-  if(v==='modelos'){
-    w.style.display='block';
-    const sn=$('ee-sal-nicho');
-    if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
-    onEeSalNicho();
-  } else {
-    w.style.display='none';
-  }
-}
+
+// ─── Cascada nicho→modelo — modal editar ───
 function onEeSalNicho(){
   const nicho=$('ee-sal-nicho')?.value||'';
   const mods=nicho?MODS.filter(m=>m.nicho===nicho):MODS;
-  const sel=$('ee-mods');
-  if(!sel)return;
+  const sel=$('ee-mods');if(!sel)return;
   const selActual=Array.from(sel.selectedOptions||[]).map(o=>o.value);
   sel.innerHTML=mods.map(m=>`<option value="${m.nom}"${selActual.includes(m.nom)?' selected':''}>${m.nom}${m.nicho?' ('+m.nicho+')':''}</option>`).join('');
 }
+
 async function saveEe(){
   const id=$('ee-id').value,idx=EQ.empleados.findIndex(x=>x.id===id);if(idx<0)return;
-  const eeMods=$('ee-mods');const salMods=eeMods?Array.from(eeMods.selectedOptions).map(o=>o.value).join(','):'';
-  const salBase=document.querySelector('input[name="ee-sal-base"]:checked')?.value||'total';
+  const eeMods=$('ee-mods');
+  const salMods=eeMods?Array.from(eeMods.selectedOptions).map(o=>o.value).join(','):'';
   EQ.empleados[idx]={...EQ.empleados[idx],
     nom:$('ee-nom').value.trim(),area:$('ee-area').value,puesto:$('ee-puesto').value,team:$('ee-team').value,
-    salBase,salFijo:parseFloat($('ee-fijo').value||0),salHora:parseFloat($('ee-hora').value||0),
+    salBase:$('ee-sal-tipo').value,
+    salFijo:parseFloat($('ee-fijo').value||0),salHora:parseFloat($('ee-hora').value||0),
     salPct:parseFloat($('ee-pct').value||0),salTecho:parseFloat($('ee-techo').value||0),salMods};
   await sEQ();clsEmpMod();rEquipo();notif('Actualizado');
 }
