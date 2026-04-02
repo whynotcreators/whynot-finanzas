@@ -443,6 +443,27 @@ tbody td.b{color:var(--tx);font-weight:500;}
 .login-btn:hover{opacity:.9;}
 .login-err{color:var(--re);font-size:11px;margin-top:8px;min-height:16px;font-family:var(--sa);}
 
+/* ── Dropdown checkboxes para modelos ── */
+.chk-drop{position:relative;width:100%;}
+.chk-drop-btn{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--br);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:7px 10px;cursor:pointer;user-select:none;min-height:34px;}
+.chk-drop-btn:hover{border-color:var(--gr);}
+.chk-drop-btn.open{border-color:var(--gr);box-shadow:0 0 0 3px var(--gd);}
+.chk-drop-arrow{font-size:10px;color:var(--t3);flex-shrink:0;margin-left:6px;transition:transform .15s;}
+.chk-drop-btn.open .chk-drop-arrow{transform:rotate(180deg);}
+.chk-drop-label{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--t2);}
+.chk-drop-label.has-sel{color:var(--tx);}
+.chk-drop-panel{display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--sf);border:1px solid var(--gr);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.12);margin-top:2px;max-height:220px;overflow-y:auto;}
+.chk-drop-panel.open{display:block;}
+.chk-drop-panel::-webkit-scrollbar{width:4px;}
+.chk-drop-panel::-webkit-scrollbar-thumb{background:var(--br);border-radius:2px;}
+.chk-drop-item{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:12px;color:var(--t2);transition:background .1s;}
+.chk-drop-item:hover{background:var(--s2);}
+.chk-drop-item input[type=checkbox]{accent-color:var(--gr);width:14px;height:14px;flex-shrink:0;cursor:pointer;}
+.chk-drop-item span{flex:1;}
+.chk-drop-item.checked{color:var(--tx);}
+.chk-drop-search{padding:6px 8px;border-bottom:1px solid var(--br);}
+.chk-drop-search input{width:100%;background:var(--s2);border:1px solid var(--br);border-radius:5px;color:var(--tx);font-family:var(--sa);font-size:11px;padding:5px 8px;outline:none;}
+.chk-drop-search input:focus{border-color:var(--gr);}
 /* Horas highlight box */
 .horas-box{background:rgba(46,125,50,.06);border:1px solid rgba(46,125,50,.2);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-top:2px;}
 .horas-box .calc-result{font-size:13px;font-weight:700;color:var(--gr);}
@@ -1032,8 +1053,18 @@ tbody td.b{color:var(--tx);font-weight:500;}
           </div>
           <div class="fr" style="min-width:200px;flex:1">
             <label>Modelos (todas si ninguna seleccionada)</label>
-            <select id="emp-sal-mods" multiple style="height:90px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select>
-            <div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias · Sin selección = todas</div>
+            <div class="chk-drop" id="emp-sal-mods-drop">
+              <div class="chk-drop-btn" onclick="toggleChkDrop('emp-sal-mods-drop')">
+                <span class="chk-drop-label" id="emp-sal-mods-lbl">Todas las modelos</span>
+                <span class="chk-drop-arrow">▼</span>
+              </div>
+              <div class="chk-drop-panel" id="emp-sal-mods-panel">
+                <div class="chk-drop-search"><input type="text" placeholder="Buscar..." oninput="filterChkDrop('emp-sal-mods-drop',this.value)"></div>
+                <div id="emp-sal-mods-items"></div>
+              </div>
+            </div>
+            <input type="hidden" id="emp-sal-mods">
+            <div style="font-size:8px;color:var(--t3);margin-top:3px">Sin selección = todas</div>
           </div>
         </div>
         <button class="btn bp" onclick="addEmp()">+ Guardar Empleado</button>
@@ -1160,8 +1191,18 @@ tbody td.b{color:var(--tx);font-weight:500;}
       </div>
       <div class="fr" style="min-width:180px;flex:1">
         <label>Modelos (todas si ninguna seleccionada)</label>
-        <select id="ee-mods" multiple style="height:90px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:5px 8px;outline:none;width:100%;"></select>
-        <div style="font-size:8px;color:var(--t3);margin-top:3px">Ctrl+clic para seleccionar varias · Sin selección = todas</div>
+        <div class="chk-drop" id="ee-mods-drop">
+          <div class="chk-drop-btn" onclick="toggleChkDrop('ee-mods-drop')">
+            <span class="chk-drop-label" id="ee-mods-lbl">Todas las modelos</span>
+            <span class="chk-drop-arrow">▼</span>
+          </div>
+          <div class="chk-drop-panel" id="ee-mods-panel">
+            <div class="chk-drop-search"><input type="text" placeholder="Buscar..." oninput="filterChkDrop('ee-mods-drop',this.value)"></div>
+            <div id="ee-mods-items"></div>
+          </div>
+        </div>
+        <input type="hidden" id="ee-mods">
+        <div style="font-size:8px;color:var(--t3);margin-top:3px">Sin selección = todas</div>
       </div>
     </div>
     <div class="mod-ft"><button class="btn bg" onclick="clsEmpMod()">Cancelar</button><button class="btn bp" onclick="saveEe()">Guardar</button></div>
@@ -1929,7 +1970,7 @@ function rEquipo(){
   const et=$('emp-team');if(et)et.innerHTML='<option value="">— Seleccionar —</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
   // poblar nichos y modelos en el formulario nuevo
   const sn=$('emp-sal-nicho');if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
-  onEmpSalNicho();
+  onEmpSalNicho(); // esto buildea el dropdown de checkboxes
   updEmpSalTipo();
   renderEmpTb();
 }
@@ -1985,12 +2026,84 @@ function updEmpSalTipo(){
 }
 
 // ─── Cascada nicho→modelo — formulario nuevo ───
+// ─── Dropdown Checkboxes — funciones genéricas ───────
+function toggleChkDrop(dropId){
+  const btn=$(dropId).querySelector('.chk-drop-btn');
+  const panel=$(dropId).querySelector('.chk-drop-panel');
+  const isOpen=panel.classList.contains('open');
+  // cerrar todos los demás
+  document.querySelectorAll('.chk-drop-panel.open').forEach(p=>p.classList.remove('open'));
+  document.querySelectorAll('.chk-drop-btn.open').forEach(b=>b.classList.remove('open'));
+  if(!isOpen){panel.classList.add('open');btn.classList.add('open');}
+}
+// Cerrar dropdown al click fuera
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.chk-drop')){
+    document.querySelectorAll('.chk-drop-panel.open').forEach(p=>p.classList.remove('open'));
+    document.querySelectorAll('.chk-drop-btn.open').forEach(b=>b.classList.remove('open'));
+  }
+});
+function filterChkDrop(dropId,q){
+  const items=$(dropId).querySelector('[id$="-items"]');
+  if(!items)return;
+  const lq=q.toLowerCase();
+  Array.from(items.querySelectorAll('.chk-drop-item')).forEach(item=>{
+    item.style.display=item.dataset.nom.toLowerCase().includes(lq)?'':'none';
+  });
+}
+function buildChkDrop(dropId,mods,selMods){
+  // selMods = array de nombres seleccionados
+  const itemsCont=$(dropId).querySelector('[id$="-items"]');
+  const lbl=$(dropId).querySelector('.chk-drop-label');
+  const hiddenInput=$(dropId).parentElement?.querySelector('input[type=hidden]')||
+                     $(dropId).nextElementSibling;
+  if(!itemsCont)return;
+  itemsCont.innerHTML=mods.map(m=>`
+    <div class="chk-drop-item${selMods.includes(m.nom)?' checked':''}" data-nom="${m.nom}"
+         onclick="toggleChkItem(this,'${dropId}')">
+      <input type="checkbox"${selMods.includes(m.nom)?' checked':''} onclick="event.stopPropagation()">
+      <span>${m.nom}${m.nicho?' <span style=\'font-size:9px;color:var(--t3)\'>'+m.nicho+'</span>':''}</span>
+    </div>`).join('');
+  updChkDropLabel(dropId);
+}
+function toggleChkItem(item,dropId){
+  item.classList.toggle('checked');
+  const cb=item.querySelector('input[type=checkbox]');
+  if(cb)cb.checked=item.classList.contains('checked');
+  updChkDropLabel(dropId);
+}
+function updChkDropLabel(dropId){
+  const drop=$(dropId);if(!drop)return;
+  const checked=Array.from(drop.querySelectorAll('.chk-drop-item.checked')).map(i=>i.dataset.nom);
+  const lbl=drop.querySelector('.chk-drop-label');
+  if(lbl){
+    if(checked.length===0){lbl.textContent='Todas las modelos';lbl.classList.remove('has-sel');}
+    else{lbl.textContent=checked.join(', ');lbl.classList.add('has-sel');}
+  }
+  // sync hidden input
+  const hid=drop.parentElement?.querySelector('input[type=hidden]');
+  if(hid)hid.value=checked.join(',');
+}
+function getChkDropValues(dropId){
+  const drop=$(dropId);if(!drop)return '';
+  return Array.from(drop.querySelectorAll('.chk-drop-item.checked')).map(i=>i.dataset.nom).join(',');
+}
+function setChkDropValues(dropId,selMods){
+  const drop=$(dropId);if(!drop)return;
+  drop.querySelectorAll('.chk-drop-item').forEach(item=>{
+    const sel=selMods.includes(item.dataset.nom);
+    item.classList.toggle('checked',sel);
+    const cb=item.querySelector('input[type=checkbox]');if(cb)cb.checked=sel;
+  });
+  updChkDropLabel(dropId);
+}
+
+// ─── Cascada nicho→modelo — formulario nuevo ───
 function onEmpSalNicho(){
   const nicho=$('emp-sal-nicho')?.value||'';
   const mods=nicho?MODS.filter(m=>m.nicho===nicho):MODS;
-  const sel=$('emp-sal-mods');if(!sel)return;
-  const selActual=Array.from(sel.selectedOptions||[]).map(o=>o.value);
-  sel.innerHTML=mods.map(m=>`<option value="${m.nom}"${selActual.includes(m.nom)?' selected':''}>${m.nom}${m.nicho?' ('+m.nicho+')':''}</option>`).join('');
+  const selActual=getChkDropValues('emp-sal-mods-drop').split(',').filter(Boolean);
+  buildChkDrop('emp-sal-mods-drop',mods,selActual);
 }
 
 // ─── Auto-poblar modelos al elegir team ───
@@ -1998,27 +2111,24 @@ function onEmpTeamChange(){
   const team=$('emp-team').value;if(!team)return;
   const modsDelTeam=MODS.filter(m=>m.team===team||((m.teams||[]).includes(team)));
   if(!modsDelTeam.length)return;
-  onEmpSalNicho(); // refrescar lista
-  const sel=$('emp-sal-mods');
-  if(sel)Array.from(sel.options).forEach(o=>{o.selected=modsDelTeam.some(m=>m.nom===o.value);});
+  onEmpSalNicho();
+  setChkDropValues('emp-sal-mods-drop',modsDelTeam.map(m=>m.nom));
 }
 
 async function addEmp(){
   const nom=$('emp-nom').value.trim(),puesto=$('emp-puesto').value,area=$('emp-area').value;
   if(!nom||!puesto){notif('Nombre y puesto requeridos','er');return;}
   const salTipo=$('emp-sal-tipo').value;
-  const modsSel=$('emp-sal-mods');
-  const salMods=modsSel?Array.from(modsSel.selectedOptions).map(o=>o.value).join(','):'';
+  const salMods=getChkDropValues('emp-sal-mods-drop');
   const emp={id:uid(),nom,area,puesto,team:$('emp-team').value,
-    salBase:salTipo, // reutilizamos salBase para guardar el tipo
-    salFijo:parseFloat($('emp-sal-fijo').value||0),
+    salBase:salTipo,salFijo:parseFloat($('emp-sal-fijo').value||0),
     salHora:parseFloat($('emp-sal-hora').value||0),
     salPct:parseFloat($('emp-sal-pct').value||0),
     salTecho:parseFloat($('emp-sal-techo').value||0),salMods};
   EQ.empleados.push(emp);await sEQ();
   $('emp-nom').value='';$('emp-sal-fijo').value='';$('emp-sal-pct').value='';
   $('emp-sal-techo').value='';$('emp-sal-hora').value='';
-  if(modsSel)Array.from(modsSel.options).forEach(o=>o.selected=false);
+  setChkDropValues('emp-sal-mods-drop',[]);
   $('emp-sal-tipo').value='fijo';updEmpSalTipo();
   rEquipo();notif('Empleado guardado');
 }
@@ -2033,20 +2143,18 @@ function openEmp(id){
   $('ee-puesto').innerHTML='<option value="">—</option>'+puestosFiltrados.map(p=>`<option value="${p.nom}"${e.puesto===p.nom?' selected':''}>${p.nom}</option>`).join('');
   $('ee-team').innerHTML='<option value="">—</option>'+EQ.teams.map(t=>`<option${e.team===t?' selected':''}>${t}</option>`).join('');
   $('ee-team-w').style.display=e.puesto==='Chatter'?'flex':'none';
-  // tipo sueldo
   const salTipo=e.salBase||'fijo';
   $('ee-sal-tipo').value=salTipo;updEeSalTipo();
   $('ee-fijo').value=e.salFijo||'';
   $('ee-hora').value=e.salHora||'';
   $('ee-pct').value=e.salPct||'';
   $('ee-techo').value=e.salTecho||'';
-  // modelos relacionadas — poblar nicho y seleccionar guardadas
+  // modelos relacionadas
   const sn=$('ee-sal-nicho');
   if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
   onEeSalNicho();
-  const eeMods=$('ee-mods');
   const selMods=(e.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
-  if(eeMods)Array.from(eeMods.options).forEach(o=>{o.selected=selMods.includes(o.value);});
+  setChkDropValues('ee-mods-drop',selMods);
   $('emp-modal').classList.add('on');
 }
 function updEeArea(){const area=$('ee-area').value;const puestos=getPuestoNoms(area);$('ee-puesto').innerHTML='<option value="">—</option>'+puestos.map(p=>`<option value="${p.nom}">${p.nom}</option>`).join('');$('ee-team-w').style.display='none';}
@@ -2068,15 +2176,13 @@ function updEeSalTipo(){
 function onEeSalNicho(){
   const nicho=$('ee-sal-nicho')?.value||'';
   const mods=nicho?MODS.filter(m=>m.nicho===nicho):MODS;
-  const sel=$('ee-mods');if(!sel)return;
-  const selActual=Array.from(sel.selectedOptions||[]).map(o=>o.value);
-  sel.innerHTML=mods.map(m=>`<option value="${m.nom}"${selActual.includes(m.nom)?' selected':''}>${m.nom}${m.nicho?' ('+m.nicho+')':''}</option>`).join('');
+  const selActual=getChkDropValues('ee-mods-drop').split(',').filter(Boolean);
+  buildChkDrop('ee-mods-drop',mods,selActual);
 }
 
 async function saveEe(){
   const id=$('ee-id').value,idx=EQ.empleados.findIndex(x=>x.id===id);if(idx<0)return;
-  const eeMods=$('ee-mods');
-  const salMods=eeMods?Array.from(eeMods.selectedOptions).map(o=>o.value).join(','):'';
+  const salMods=getChkDropValues('ee-mods-drop');
   EQ.empleados[idx]={...EQ.empleados[idx],
     nom:$('ee-nom').value.trim(),area:$('ee-area').value,puesto:$('ee-puesto').value,team:$('ee-team').value,
     salBase:$('ee-sal-tipo').value,
