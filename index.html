@@ -2162,7 +2162,7 @@ async function init(){
 document.addEventListener('DOMContentLoaded',async()=>{
   initTheme();
   try{await loadUsers();}catch(e){}
-  if(checkAuth())return;
+  if(checkAuth()){init();return;}
 });
 </script>
 </body>
