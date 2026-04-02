@@ -681,6 +681,8 @@ tbody td.b{color:var(--tx);font-weight:500;}
         <button class="tabb" onclick="pagTab('ch',this)">Chatters</button>
         <button class="tabb" onclick="pagTab('ed',this)">Editores y Staff</button>
         <button class="tabb" onclick="pagTab('mod',this)">Modelos</button>
+        <button class="tabb" onclick="pagTab('ref',this)">Referidos</button>
+        <button class="tabb" onclick="pagTab('ceo',this)">CEOs</button>
       </div>
 
       <!-- TAB TEAM LEADER -->
@@ -722,6 +724,45 @@ tbody td.b{color:var(--tx);font-weight:500;}
         <div class="sec"><div class="sh"><span class="st">Detalle — Modelos</span><span class="tag ty" id="pag-ttl-mod">Total: $0</span></div>
           <table><thead><tr><th>Modelo</th><th>Nicho</th><th>Facturado</th><th>Contrato</th><th>Pago</th><th>Paga Gastos</th><th>50% Gastos</th><th>Total neto</th><th>Estado</th><th></th></tr></thead>
           <tbody id="pag-tb-mod"></tbody></table>
+        </div>
+      </div>
+
+      <!-- TAB REFERIDOS -->
+      <div id="pag-ref" style="display:none">
+        <div class="wg" id="pag-wg-ref"></div>
+        <div class="sec"><div class="sh"><span class="st">Detalle — Referidos</span><span class="tag ty" id="pag-ttl-ref">Total: $0</span></div>
+          <table><thead><tr><th>Referidor</th><th>Modelo referida</th><th>Wallet</th><th>Comisión %</th><th>Facturado modelo</th><th>A cobrar</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="pag-tb-ref"></tbody></table>
+        </div>
+      </div>
+
+      <!-- TAB CEOs -->
+      <div id="pag-ceo" style="display:none">
+        <div class="sec" style="margin-bottom:12px">
+          <div class="sh"><span class="st">Configuración distribución</span></div>
+          <div class="sb2">
+            <div style="font-size:10px;color:var(--t3);margin-bottom:10px">Porcentaje del neto que recibe cada socio. Modificable en cualquier momento.</div>
+            <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+              <div class="fr"><label>Agustín (%)</label><input type="number" id="ceo-pct-ag" value="50" min="0" max="100" style="width:80px;background:var(--s2);border:1px solid var(--br);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:7px 10px;outline:none;" oninput="syncCeoPct('ag')"></div>
+              <div class="fr"><label>Marco (%)</label><input type="number" id="ceo-pct-ma" value="50" min="0" max="100" style="width:80px;background:var(--s2);border:1px solid var(--br);border-radius:6px;color:var(--tx);font-family:var(--sa);font-size:12px;padding:7px 10px;outline:none;" oninput="syncCeoPct('ma')"></div>
+              <button class="btn bp bs" onclick="saveCeoPct()">Guardar %</button>
+            </div>
+          </div>
+        </div>
+        <div class="kg k4" style="margin-bottom:14px">
+          <div class="kc g"><div class="kl">Facturación bruta</div><div class="kv" id="ceo-k-fac">$0</div><div class="kd">del período</div></div>
+          <div class="kc r"><div class="kl">Total pagos equipo + modelos</div><div class="kv" id="ceo-k-pag">$0</div><div class="kd">salarios + contratos</div></div>
+          <div class="kc r"><div class="kl">Gastos operativos</div><div class="kv" id="ceo-k-gas">$0</div><div class="kd">suscripciones y otros</div></div>
+          <div class="kc b"><div class="kl">Neto distribuible</div><div class="kv" id="ceo-k-net">$0</div><div class="kd">después de todos los costos</div></div>
+        </div>
+        <div class="wg" id="pag-wg-ceo"></div>
+        <div class="sec"><div class="sh"><span class="st">Desglose — CEOs</span><span class="tag tb" id="pag-ttl-ceo">Total: $0</span></div>
+          <table><thead><tr><th>Socio</th><th>Porcentaje</th><th>Neto base</th><th>A recibir</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="pag-tb-ceo"></tbody></table>
+        </div>
+        <div class="sec" style="margin-top:12px">
+          <div class="sh"><span class="st">Desglose de costos del período</span></div>
+          <div class="sb2" id="ceo-desglose" style="font-size:11px;color:var(--t2);line-height:2"></div>
         </div>
       </div>
     </div>
@@ -895,6 +936,22 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div style="font-size:9px;color:var(--t3);margin-top:5px">Dejá "hasta" en 0 para indicar "en adelante".</div>
         </div>
         <div class="fr" style="max-width:260px;margin-bottom:9px"><label>Team asignado</label><select id="mod-teams"><option value="">— Sin team —</option></select></div>
+        <!-- REFERIDO -->
+        <div style="margin-bottom:9px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer">
+              <input type="checkbox" id="mod-ref-check" onchange="updModRef()"> Esta modelo fue referida
+            </label>
+          </div>
+          <div id="mod-ref-w" style="display:none;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:10px 12px">
+            <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Datos del referidor</div>
+            <div class="fg f3">
+              <div class="fr"><label>Nombre</label><input type="text" id="mod-ref-nom" placeholder="Nombre del referidor"></div>
+              <div class="fr"><label>Wallet (dirección de pago)</label><input type="text" id="mod-ref-wallet" placeholder="Ej: @usuario / dirección cripto"></div>
+              <div class="fr"><label>Comisión (%)</label><input type="number" id="mod-ref-pct" placeholder="10" min="0" max="100" step="0.1"></div>
+            </div>
+          </div>
+        </div>
         <button class="btn bp" onclick="addMod()">+ Guardar Modelo</button>
       </div>
       <div id="mods-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
@@ -1048,6 +1105,20 @@ tbody td.b{color:var(--tx);font-weight:500;}
       <button class="btn bg bs" onclick="addTrm('me-tramos')" style="margin-top:4px">+ Agregar tramo</button>
     </div>
     <div class="fr" style="margin-top:10px"><label>Team asignado</label><select id="me-teams"><option value="">— Sin team —</option></select></div>
+    <!-- REFERIDO -->
+    <div style="margin-top:10px">
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);cursor:pointer;margin-bottom:6px">
+        <input type="checkbox" id="me-ref-check" onchange="updMeRef()"> Esta modelo fue referida
+      </label>
+      <div id="me-ref-w" style="display:none;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:10px 12px">
+        <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Datos del referidor</div>
+        <div class="fg f3">
+          <div class="fr"><label>Nombre</label><input type="text" id="me-ref-nom" placeholder="Nombre del referidor"></div>
+          <div class="fr"><label>Wallet</label><input type="text" id="me-ref-wallet" placeholder="@usuario / dirección"></div>
+          <div class="fr"><label>Comisión (%)</label><input type="number" id="me-ref-pct" placeholder="10" min="0" max="100" step="0.1"></div>
+        </div>
+      </div>
+    </div>
     <div class="mod-ft"><button class="btn bg" onclick="clsMod()">Cancelar</button><button class="btn bp" onclick="saveMe()">Guardar</button></div>
   </div>
 </div>
@@ -1180,7 +1251,7 @@ async function sDB_fac_del(id){await sbDel('wf_facturacion',`id=eq.${id}`);}
 async function sDB_gas(row){await sbUpsert('wf_gastos',[{id:row.id,categoria:row.categoria,descripcion:row.descripcion,monto:row.monto,fecha:row.fecha||today(),area:row.area||'',puesto:row.puesto||'',team:row.team||'',empleado:row.empleado||'',software:row.software||'',modelo_asoc:row.modeloAsoc||'',pagador:row.pagador||'Agencia',notas:row.notas||''}]);}
 async function sDB_gas_del(id){await sbDel('wf_gastos',`id=eq.${id}`);}
 async function sDB_pago(key,val){if(val){await sbUpsert('wf_pagos',[{id:key,pagado:val}]);}else{await sbDel('wf_pagos',`id=eq.${encodeURIComponent(key)}`);}}
-async function sMD(){if(!MODS.length)return;const rows=MODS.map(m=>({id:m.id,nom:m.nom,nicho:m.nicho||'',tipo:m.tipo,pct:m.pct||0,tramos:m.tramos||[],team:m.team||'',teams:m.teams||[]}));await sbUpsert('wf_modelos',rows);}
+async function sMD(){if(!MODS.length)return;const rows=MODS.map(m=>({id:m.id,nom:m.nom,nicho:m.nicho||'',tipo:m.tipo,pct:m.pct||0,tramos:m.tramos||[],team:m.team||'',teams:m.teams||[],referido:m.referido||null}));await sbUpsert('wf_modelos',rows);}
 async function sMD_del(id){await sbDel('wf_modelos',`id=eq.${id}`);}
 async function sEQ(){if(!EQ.empleados.length)return;const rows=EQ.empleados.map(e=>({id:e.id,nom:e.nom,area:e.area||'',puesto:e.puesto,team:e.team||'',sal_tipo:e.salBase||'total',sal_fijo:e.salFijo||0,sal_pct:e.salPct||0,sal_techo:e.salTecho||0,sal_mods:e.salMods||'',sal_hora:e.salHora||0}));await sbUpsert('wf_equipo',rows);}
 async function sEQ_del(id){await sbDel('wf_equipo',`id=eq.${id}`);}
@@ -1199,7 +1270,7 @@ async function loadFromSupabase(){
     if(fac)DB.fac=fac.map(r=>({id:r.id,modelo:r.modelo,nicho:r.nicho,monto:parseFloat(r.monto),mes:r.mes,fecha:r.fecha,tipo:r.tipo,notas:r.notas}));
     if(gas)DB.gastos=gas.map(r=>({id:r.id,categoria:r.categoria,descripcion:r.descripcion,monto:parseFloat(r.monto),fecha:r.fecha,area:r.area,puesto:r.puesto,team:r.team,empleado:r.empleado,software:r.software,modeloAsoc:r.modelo_asoc,pagador:r.pagador||'Agencia',notas:r.notas}));
     if(pagos)pagos.forEach(p=>{DB.pagPagos[p.id]=p.pagado;});
-    if(mods)MODS=mods.map(r=>({id:r.id,nom:r.nom,nicho:r.nicho,tipo:r.tipo,pct:parseFloat(r.pct||0),tramos:r.tramos||[],team:r.team||'',teams:r.teams||[]}));
+    if(mods)MODS=mods.map(r=>({id:r.id,nom:r.nom,nicho:r.nicho,tipo:r.tipo,pct:parseFloat(r.pct||0),tramos:r.tramos||[],team:r.team||'',teams:r.teams||[],referido:r.referido||null}));
     if(equipo)EQ.empleados=equipo.map(r=>{
       // migrar sal_tipo viejo ('total','modelos','chatting','fijo','por-hora','pct-total',etc.) al nuevo sistema
       let salBase=r.sal_tipo||'fijo';
@@ -1218,7 +1289,7 @@ async function loadFromSupabase(){
         salBase,salFijo,salPct,salTecho:parseFloat(r.sal_techo||0),
         salMods:r.sal_mods||'',salHora:parseFloat(r.sal_hora||0)};
     });
-    if(config){const cfgMap={};config.forEach(c=>{cfgMap[c.key]=c.value;});if(cfgMap.puestos)EQ.puestos=cfgMap.puestos;if(cfgMap.teams)EQ.teams=cfgMap.teams;if(cfgMap.nichos)NICHOS=cfgMap.nichos;if(cfgMap.cats)CATS=cfgMap.cats;if(cfgMap.objetivo)OBJ=cfgMap.objetivo;if(cfgMap.usuarios)USERS=cfgMap.usuarios;}
+    if(config){const cfgMap={};config.forEach(c=>{cfgMap[c.key]=c.value;});if(cfgMap.puestos)EQ.puestos=cfgMap.puestos;if(cfgMap.teams)EQ.teams=cfgMap.teams;if(cfgMap.nichos)NICHOS=cfgMap.nichos;if(cfgMap.cats)CATS=cfgMap.cats;if(cfgMap.objetivo)OBJ=cfgMap.objetivo;if(cfgMap.usuarios)USERS=cfgMap.usuarios;if(cfgMap.ceo_pct)CEO_PCT=cfgMap.ceo_pct;}
     hideLoader();return true;
   }catch(e){hideLoader();console.error('Error Supabase:',e);notif('Error conectando con la base de datos','er');return false;}
 }
@@ -1601,7 +1672,7 @@ async function delGas(id){DB.gastos=DB.gastos.filter(x=>x.id!==id);await sDB_gas
 // PAGOS AL EQUIPO
 // ═══════════════════════════════════════════════════
 let pagTabAct='tl';
-function pagTab(t,el){pagTabAct=t;document.querySelectorAll('.tabb').forEach(x=>x.classList.remove('on'));if(el)el.classList.add('on');$('pag-tl').style.display=t==='tl'?'block':'none';$('pag-ch').style.display=t==='ch'?'block':'none';$('pag-ed').style.display=t==='ed'?'block':'none';$('pag-mod').style.display=t==='mod'?'block':'none';}
+function pagTab(t,el){pagTabAct=t;document.querySelectorAll('.tabb').forEach(x=>x.classList.remove('on'));if(el)el.classList.add('on');$('pag-tl').style.display=t==='tl'?'block':'none';$('pag-ch').style.display=t==='ch'?'block':'none';$('pag-ed').style.display=t==='ed'?'block':'none';$('pag-mod').style.display=t==='mod'?'block':'none';$('pag-ref').style.display=t==='ref'?'block':'none';$('pag-ceo').style.display=t==='ceo'?'block':'none';}
 function pkKey(mes,tipo,nom){return`${mes}|${tipo}|${nom}`;}
 function rPagos(){
   if(!$('pag-mes').value)$('pag-mes').value=periodo;
@@ -1630,6 +1701,8 @@ function rPagos(){
   $('pag-wg-mod').innerHTML=modData.map(m=>{const k=pkKey(mes,'mod',m.nom);const pg=DB.pagPagos[k];return`<div class="wc ${pg?'ok':''}"><div class="wn">${m.nom}</div><div class="wr">${m.nicho}</div><div class="wa">${fmt(m.totalNeto)}</div><div class="wd">${fmt(m.facturado)} fac.<br>${m.res.desc}<br>${m.gCargo>0?'+ 50% gastos: '+fmt(m.gCargo):'Sin cargo gastos'}</div></div>`;}).join('')||'<div class="emp" style="grid-column:span 4">Sin facturación este mes</div>';
   const edTitleEl=$('pag-ed-title');if(edTitleEl)edTitleEl.textContent='Detalle — Editores y Staff';
   $('pag-tb-mod').innerHTML=modData.map(m=>{const k=pkKey(mes,'mod',m.nom);const pg=DB.pagPagos[k];return`<tr><td class="b">${m.nom}</td><td><span class="tag tgr">${m.nicho}</span></td><td style="color:var(--gr)">${fmt(m.facturado)}</td><td style="font-size:10px">${m.res.desc}</td><td style="color:var(--bl)">${fmt(m.res.pago)}</td><td>${m.res.pagaGastos?'<span class="badge-p">SI</span>':'<span class="badge-np">NO</span>'}</td><td style="color:var(--re)">${m.gCargo>0?fmt(m.gCargo):'—'}</td><td style="color:var(--ye);font-weight:700">${fmt(m.totalNeto)}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar'}</button></td></tr>`;}).join('')||'<tr><td colspan="10" class="emp">Sin datos</td></tr>';
+  rPagReferidos();
+  rPagCEOs();
 }
 function rPagChatters(){
   const mes=$('pag-mes').value||periodo;const teamFlt=$('pag-team-flt')?.value||'';
@@ -1641,6 +1714,89 @@ function rPagChatters(){
   $('pag-tb-ch').innerHTML=chData.map(e=>{const k=pkKey(mes,'ch',e.nom);const pg=DB.pagPagos[k];return`<tr><td class="b">${e.nom}</td><td><span class="tag tb">Chatter</span></td><td><span class="tag tgr">${e.team||'—'}</span></td><td style="font-size:10px;color:var(--t2)">${e.desc}</td><td style="color:var(--ye);font-weight:700">${fmt(e.total)}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar pagado'}</button></td></tr>`;}).join('')||'<tr><td colspan="7" class="emp">Sin chatters</td></tr>';
 }
 async function tglPago(k){DB.pagPagos[k]=!DB.pagPagos[k];await sDB_pago(k,DB.pagPagos[k]);rPagos();notif(DB.pagPagos[k]?'Marcado como pagado':'Desmarcado');}
+
+// ─── REFERIDOS ───────────────────────────────────────
+function rPagReferidos(){
+  const mes=$('pag-mes').value||periodo;
+  const fac=fpms(DB.fac,mes);
+  // agrupar facturación por modelo
+  const modMap={};fac.forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
+  // buscar modelos con referido
+  const refData=[];
+  MODS.forEach(m=>{
+    if(!m.referido)return;
+    const facturado=modMap[m.nom]||0;
+    if(!facturado)return;
+    const res=calcModelo(m,facturado);
+    // el referido cobra su % solo si la modelo paga gastos (>=50%)
+    const pagarRef=res.pagaGastos;
+    const montoRef=pagarRef?(facturado*m.referido.pct/100):0;
+    refData.push({modelo:m.nom,nicho:m.nicho||'—',ref:m.referido,facturado,pagaGastos:pagarRef,monto:montoRef});
+  });
+  const totalRef=refData.reduce((s,r)=>s+r.monto,0);
+  $('pag-ttl-ref').textContent='Total: '+fmt(totalRef);
+  $('pag-wg-ref').innerHTML=refData.map(r=>`<div class="wc"><div class="wn">${r.ref.nom}</div><div class="wr">Referidor · ${r.ref.pct}%</div><div class="wa" style="color:var(--pu)">${fmt(r.monto)}</div><div class="wd">por ${r.modelo}${!r.pagaGastos?' · modelo no paga gastos':''}</div></div>`).join('')||'<div class="emp" style="grid-column:span 4">Sin referidos este mes</div>';
+  $('pag-tb-ref').innerHTML=refData.length?refData.map(r=>{
+    const k=pkKey(mes,'ref',r.ref.nom+'_'+r.modelo);const pg=DB.pagPagos[k];
+    return`<tr><td class="b">${r.ref.nom}</td><td>${r.modelo}</td><td style="font-size:10px;color:var(--t3)">${r.ref.wallet||'—'}</td><td>${r.ref.pct}%</td><td style="color:var(--gr)">${fmt(r.facturado)}</td><td style="color:var(--pu);font-weight:700">${r.pagaGastos?fmt(r.monto):'<span class="badge-np">No aplica</span>'}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar'}</button></td></tr>`;
+  }).join(''):'<tr><td colspan="8" class="emp">Sin referidos este mes</td></tr>';
+}
+
+// ─── CEOs ─────────────────────────────────────────────
+let CEO_PCT={agustin:50,marco:50};
+function syncCeoPct(quien){
+  const ag=parseFloat($('ceo-pct-ag')?.value||50);
+  const ma=parseFloat($('ceo-pct-ma')?.value||50);
+  if(quien==='ag')$('ceo-pct-ma').value=(100-ag).toFixed(1);
+  else $('ceo-pct-ag').value=(100-ma).toFixed(1);
+}
+async function saveCeoPct(){
+  CEO_PCT.agustin=parseFloat($('ceo-pct-ag').value||50);
+  CEO_PCT.marco=parseFloat($('ceo-pct-ma').value||50);
+  await sCFG('ceo_pct',CEO_PCT);
+  notif('Porcentajes guardados');rPagos();
+}
+function rPagCEOs(){
+  const mes=$('pag-mes').value||periodo;
+  const fac=fpms(DB.fac,mes),gas=fpm(DB.gastos,mes);
+  const totalFac=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  const totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  // calcular todos los pagos (modelos + equipo + referidos)
+  const modMap={};fac.forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
+  let totalPagMod=0,totalPagEq=0,totalPagRef=0;
+  Object.entries(modMap).forEach(([nom,f])=>{const res=calcModelo(getModByNom(nom),f);const gC=res.pagaGastos?totalGas*0.5:0;totalPagMod+=res.pago+gC;});
+  EQ.empleados.forEach(e=>{const res=calcEmpleado(e,mes);totalPagEq+=res.total;});
+  MODS.forEach(m=>{if(!m.referido)return;const f=modMap[m.nom]||0;const res=calcModelo(m,f);if(res.pagaGastos)totalPagRef+=f*m.referido.pct/100;});
+  const totalCostos=totalPagMod+totalPagEq+totalPagRef+totalGas;
+  const neto=Math.max(totalFac-totalCostos,0);
+  // KPIs
+  $('ceo-k-fac').textContent=fmt(totalFac);
+  $('ceo-k-pag').textContent=fmt(totalPagMod+totalPagEq+totalPagRef);
+  $('ceo-k-gas').textContent=fmt(totalGas);
+  $('ceo-k-net').textContent=fmt(neto);
+  // porcentajes guardados
+  const pAg=CEO_PCT.agustin||50,pMa=CEO_PCT.marco||50;
+  $('ceo-pct-ag').value=pAg;$('ceo-pct-ma').value=pMa;
+  const montoAg=neto*pAg/100,montoMa=neto*pMa/100;
+  $('pag-ttl-ceo').textContent='Total: '+fmt(montoAg+montoMa);
+  $('pag-wg-ceo').innerHTML=[
+    {nom:'Agustín',pct:pAg,monto:montoAg,key:'agustin'},
+    {nom:'Marco',pct:pMa,monto:montoMa,key:'marco'}
+  ].map(c=>{const k=pkKey(mes,'ceo',c.nom);const pg=DB.pagPagos[k];return`<div class="wc ${pg?'ok':''}"><div class="wn">${c.nom}</div><div class="wr">CEO · ${c.pct}%</div><div class="wa" style="color:var(--bl)">${fmt(c.monto)}</div><div class="wd">${c.pct}% de ${fmt(neto)} neto</div></div>`;}).join('');
+  $('pag-tb-ceo').innerHTML=[
+    {nom:'Agustín',pct:pAg,monto:montoAg},
+    {nom:'Marco',pct:pMa,monto:montoMa}
+  ].map(c=>{const k=pkKey(mes,'ceo',c.nom);const pg=DB.pagPagos[k];return`<tr><td class="b">${c.nom}</td><td>${c.pct}%</td><td style="color:var(--t2)">${fmt(neto)}</td><td style="color:var(--bl);font-weight:700">${fmt(c.monto)}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar'}</button></td></tr>`;}).join('');
+  $('ceo-desglose').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px">
+      <span style="color:var(--t3)">Facturación bruta</span><span style="color:var(--gr);font-weight:600">${fmt(totalFac)}</span>
+      <span style="color:var(--t3)">Pagos a modelos</span><span style="color:var(--re)">- ${fmt(totalPagMod)}</span>
+      <span style="color:var(--t3)">Salarios equipo</span><span style="color:var(--re)">- ${fmt(totalPagEq)}</span>
+      <span style="color:var(--t3)">Referidos</span><span style="color:var(--re)">- ${fmt(totalPagRef)}</span>
+      <span style="color:var(--t3)">Gastos operativos</span><span style="color:var(--re)">- ${fmt(totalGas)}</span>
+      <span style="color:var(--tx);font-weight:600;border-top:1px solid var(--br);padding-top:4px">Neto distribuible</span><span style="color:var(--bl);font-weight:700;border-top:1px solid var(--br);padding-top:4px">${fmt(neto)}</span>
+    </div>`;
+}
 
 // ═══════════════════════════════════════════════════
 // REPORTES
@@ -1683,18 +1839,83 @@ function rModelos(){
   const mn=$('mod-nicho');if(mn)mn.innerHTML='<option value="">— Nicho —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');
   const mt=$('mod-teams');if(mt){mt.innerHTML='<option value="">— Sin team —</option>'+EQ.teams.map(t=>`<option value="${t}">${t}</option>`).join('');}
   const g=$('mods-grid');
-  g.innerHTML=MODS.length?MODS.map(m=>{let cHtml='';if(m.tipo==='fijo'){cHtml=`<span style="color:var(--gr);font-weight:700;font-size:13px">${m.pct}%</span> fijo ${m.pct>=50?'<span class="badge-p">PAGA GASTOS</span>':'<span class="badge-np">NO PAGA</span>'}`;}else{let prev=0;cHtml='<div style="font-size:9px;color:var(--t3);margin-bottom:3px">ESCALONADO</div>'+(m.tramos||[]).map(t=>{const h=parseFloat(t.hasta)||Infinity;const l=`<div style="font-size:10px;color:var(--t2)">${fmt(prev)} → ${h===Infinity?'∞':fmt(h)}: <span style="color:var(--gr)">${t.pct}%</span>${parseFloat(t.pct)>=50?' <span class="badge-p" style="font-size:7px">PAGA GAS</span>':''}</div>`;prev=h;return l;}).join('');}return`<div style="background:var(--s2);border:1px solid var(--br);border-radius:6px;padding:12px 14px"><div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px">${m.nom}</div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">${m.nicho||'Sin nicho'} · ${m.tipo}</div><div style="margin-bottom:8px">${cHtml}</div><div style="font-size:9px;color:var(--t3)">Team: ${m.team||'—'}</div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn bg bs" onclick="openMod('${m.id}')">Editar</button><button class="btn bd2 bs" onclick="delMod('${m.id}')">Eliminar</button></div></div>`;}).join(''):'<div class="emp" style="grid-column:span 3">No hay modelos. Agregá la primera arriba.</div>';
+  g.innerHTML=MODS.length?MODS.map(m=>{
+    let cHtml='';
+    if(m.tipo==='fijo'){cHtml=`<span style="color:var(--gr);font-weight:700;font-size:13px">${m.pct}%</span> fijo ${m.pct>=50?'<span class="badge-p">PAGA GASTOS</span>':'<span class="badge-np">NO PAGA</span>'}`;}
+    else{let prev=0;cHtml='<div style="font-size:9px;color:var(--t3);margin-bottom:3px">ESCALONADO</div>'+(m.tramos||[]).map(t=>{const h=parseFloat(t.hasta)||Infinity;const l=`<div style="font-size:10px;color:var(--t2)">${fmt(prev)} → ${h===Infinity?'∞':fmt(h)}: <span style="color:var(--gr)">${t.pct}%</span>${parseFloat(t.pct)>=50?' <span class="badge-p" style="font-size:7px">PAGA GAS</span>':''}</div>`;prev=h;return l;}).join('');}
+    const refHtml=m.referido?`<div style="margin-top:5px;padding-top:5px;border-top:1px solid var(--br);font-size:9px;color:var(--pu)">Ref: ${m.referido.nom} · ${m.referido.pct}%</div>`:'';
+    return`<div style="background:var(--s2);border:1px solid var(--br);border-radius:6px;padding:12px 14px">
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px">${m.nom}</div>
+      <div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">${m.nicho||'Sin nicho'} · ${m.tipo}</div>
+      <div style="margin-bottom:8px">${cHtml}</div>
+      <div style="font-size:9px;color:var(--t3)">Team: ${m.team||'—'}</div>
+      ${refHtml}
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn bg bs" onclick="openMod('${m.id}')">Editar</button>
+        <button class="btn bd2 bs" onclick="delMod('${m.id}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join(''):'<div class="emp" style="grid-column:span 3">No hay modelos.</div>';
 }
 async function addNicho(){const v=$('nicho-inp').value.trim();if(!v){notif('Ingresá un nombre','er');return;}if(NICHOS.includes(v)){notif('Ya existe','er');return;}NICHOS.push(v);await sNI();$('nicho-inp').value='';rModelos();notif('Nicho agregado');}
 async function delNicho(n){NICHOS=NICHOS.filter(x=>x!==n);await sNI();rModelos();}
 function updModTipo(){const t=$('mod-tipo').value;$('mod-pct-w').style.display=t==='fijo'?'flex':'none';$('mod-tramos-w').style.display=t==='escalonado'?'block':'none';if(t==='escalonado'&&$('mod-tramos').children.length===0)addTrm('mod-tramos');}
 function addTrm(listId){const list=$(listId);const div=document.createElement('div');div.className='trow';div.innerHTML=`<span style="font-size:9px;color:var(--t3)">hasta</span><input type="number" class="tr-h" placeholder="0 = inf" min="0" step="100"><span style="font-size:9px;color:var(--t3)">→</span><input type="number" class="tr-p" placeholder="%" min="0" max="100" step="1" style="width:70px"><span style="font-size:9px;color:var(--t3)">%</span><button class="btn bd2 bs" onclick="this.closest('.trow').remove()">x</button>`;list.appendChild(div);}
 function getTrms(listId){return Array.from($(listId).querySelectorAll('.trow')).map(r=>({hasta:parseFloat(r.querySelector('.tr-h').value)||0,pct:parseFloat(r.querySelector('.tr-p').value)||0}));}
-async function addMod(){const nom=$('mod-nom').value.trim(),tipo=$('mod-tipo').value,nicho=$('mod-nicho').value;if(!nom){notif('Nombre requerido','er');return;}const team=$('mod-teams').value;let obj={id:uid(),nom,nicho,tipo,team,teams:team?[team]:[]};if(tipo==='fijo'){obj.pct=parseFloat($('mod-pct').value)||0;}else{obj.tramos=getTrms('mod-tramos');if(!obj.tramos.length){notif('Agregá tramos','er');return;}}MODS.push(obj);await sMD();$('mod-nom').value='';$('mod-pct').value='';$('mod-tramos').innerHTML='';rModelos();notif('Modelo guardada');}
+function updModRef(){$('mod-ref-w').style.display=$('mod-ref-check').checked?'block':'none';}
+function updMeRef(){$('me-ref-w').style.display=$('me-ref-check').checked?'block':'none';}
+function getRefFromForm(prefix){
+  const check=$(prefix+'-ref-check');
+  if(!check||!check.checked)return null;
+  const nom=$(prefix+'-ref-nom').value.trim();
+  const wallet=$(prefix+'-ref-wallet').value.trim();
+  const pct=parseFloat($(prefix+'-ref-pct').value||0);
+  if(!nom||!pct)return null;
+  return{nom,wallet,pct};
+}
+async function addMod(){
+  const nom=$('mod-nom').value.trim(),tipo=$('mod-tipo').value,nicho=$('mod-nicho').value;
+  if(!nom){notif('Nombre requerido','er');return;}
+  const team=$('mod-teams').value;
+  const referido=getRefFromForm('mod');
+  let obj={id:uid(),nom,nicho,tipo,team,teams:team?[team]:[],referido};
+  if(tipo==='fijo'){obj.pct=parseFloat($('mod-pct').value)||0;}
+  else{obj.tramos=getTrms('mod-tramos');if(!obj.tramos.length){notif('Agregá tramos','er');return;}}
+  MODS.push(obj);await sMD();
+  $('mod-nom').value='';$('mod-pct').value='';$('mod-tramos').innerHTML='';
+  $('mod-ref-check').checked=false;$('mod-ref-w').style.display='none';
+  $('mod-ref-nom').value='';$('mod-ref-wallet').value='';$('mod-ref-pct').value='';
+  rModelos();notif('Modelo guardada');
+}
 async function delMod(id){MODS=MODS.filter(x=>x.id!==id);await sMD_del(id);rModelos();}
-function openMod(id){const m=MODS.find(x=>x.id===id);if(!m)return;$('me-id').value=id;$('me-nom').value=m.nom;$('me-tipo').value=m.tipo;const mt=$('me-teams');mt.innerHTML='<option value="">— Sin team —</option>'+EQ.teams.map(t=>`<option value="${t}"${(m.team===t||(m.teams||[]).includes(t))?' selected':''}>${t}</option>`).join('');$('me-nicho').innerHTML='<option value="">— Nicho —</option>'+NICHOS.map(n=>`<option${m.nicho===n?' selected':''}>${n}</option>`).join('');$('me-fijo-w').style.display=m.tipo==='fijo'?'block':'none';$('me-tramos-w').style.display=m.tipo==='escalonado'?'block':'none';$('me-pct').value=m.pct||'';$('me-tramos').innerHTML='';(m.tramos||[]).forEach(t=>{addTrm('me-tramos');const rows=$('me-tramos').querySelectorAll('.trow');const last=rows[rows.length-1];last.querySelector('.tr-h').value=t.hasta||'';last.querySelector('.tr-p').value=t.pct||'';});$('mod-modal').classList.add('on');}
+function openMod(id){
+  const m=MODS.find(x=>x.id===id);if(!m)return;
+  $('me-id').value=id;$('me-nom').value=m.nom;$('me-tipo').value=m.tipo;
+  const mt=$('me-teams');mt.innerHTML='<option value="">— Sin team —</option>'+EQ.teams.map(t=>`<option value="${t}"${(m.team===t||(m.teams||[]).includes(t))?' selected':''}>${t}</option>`).join('');
+  $('me-nicho').innerHTML='<option value="">— Nicho —</option>'+NICHOS.map(n=>`<option${m.nicho===n?' selected':''}>${n}</option>`).join('');
+  $('me-fijo-w').style.display=m.tipo==='fijo'?'block':'none';
+  $('me-tramos-w').style.display=m.tipo==='escalonado'?'block':'none';
+  $('me-pct').value=m.pct||'';
+  $('me-tramos').innerHTML='';
+  (m.tramos||[]).forEach(t=>{addTrm('me-tramos');const rows=$('me-tramos').querySelectorAll('.trow');const last=rows[rows.length-1];last.querySelector('.tr-h').value=t.hasta||'';last.querySelector('.tr-p').value=t.pct||'';});
+  // referido
+  const ref=m.referido||null;
+  $('me-ref-check').checked=!!ref;
+  $('me-ref-w').style.display=ref?'block':'none';
+  if(ref){$('me-ref-nom').value=ref.nom||'';$('me-ref-wallet').value=ref.wallet||'';$('me-ref-pct').value=ref.pct||'';}
+  else{$('me-ref-nom').value='';$('me-ref-wallet').value='';$('me-ref-pct').value='';}
+  $('mod-modal').classList.add('on');
+}
 function updMeTipo(){const t=$('me-tipo').value;$('me-fijo-w').style.display=t==='fijo'?'block':'none';$('me-tramos-w').style.display=t==='escalonado'?'block':'none';}
-async function saveMe(){const id=$('me-id').value,idx=MODS.findIndex(x=>x.id===id);if(idx<0)return;const tipo=$('me-tipo').value;const team=$('me-teams').value;MODS[idx]={...MODS[idx],nom:$('me-nom').value.trim(),nicho:$('me-nicho').value,tipo,team,teams:team?[team]:[]};if(tipo==='fijo')MODS[idx].pct=parseFloat($('me-pct').value)||0;else MODS[idx].tramos=getTrms('me-tramos');await sMD();clsMod();rModelos();notif('Actualizado');}
+async function saveMe(){
+  const id=$('me-id').value,idx=MODS.findIndex(x=>x.id===id);if(idx<0)return;
+  const tipo=$('me-tipo').value,team=$('me-teams').value;
+  const referido=getRefFromForm('me');
+  MODS[idx]={...MODS[idx],nom:$('me-nom').value.trim(),nicho:$('me-nicho').value,tipo,team,teams:team?[team]:[],referido};
+  if(tipo==='fijo')MODS[idx].pct=parseFloat($('me-pct').value)||0;
+  else MODS[idx].tramos=getTrms('me-tramos');
+  await sMD();clsMod();rModelos();notif('Actualizado');
+}
 function clsMod(){$('mod-modal').classList.remove('on');}
 
 // ═══════════════════════════════════════════════════
