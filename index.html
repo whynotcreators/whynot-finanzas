@@ -1775,17 +1775,17 @@ function rPagReferidos(){
     const facturado=modMap[m.nom]||0;
     if(!facturado)return;
     const res=calcModelo(m,facturado);
-    // el referido cobra su % solo si la modelo paga gastos (>=50%)
-    const pagarRef=res.pagaGastos;
-    const montoRef=pagarRef?(facturado*m.referido.pct/100):0;
-    refData.push({modelo:m.nom,nicho:m.nicho||'—',ref:m.referido,facturado,pagaGastos:pagarRef,monto:montoRef});
+    const montoRef=facturado*m.referido.pct/100;
+    // si modelo paga gastos → paga ella; si no → paga la agencia
+    const pagaModelo=res.pagaGastos;
+    refData.push({modelo:m.nom,nicho:m.nicho||'—',ref:m.referido,facturado,pagaModelo,monto:montoRef});
   });
   const totalRef=refData.reduce((s,r)=>s+r.monto,0);
   $('pag-ttl-ref').textContent='Total: '+fmt(totalRef);
-  $('pag-wg-ref').innerHTML=refData.map(r=>`<div class="wc"><div class="wn">${r.ref.nom}</div><div class="wr">Referidor · ${r.ref.pct}%</div><div class="wa" style="color:var(--pu)">${fmt(r.monto)}</div><div class="wd">por ${r.modelo}${!r.pagaGastos?' · modelo no paga gastos':''}</div></div>`).join('')||'<div class="emp" style="grid-column:span 4">Sin referidos este mes</div>';
+  $('pag-wg-ref').innerHTML=refData.map(r=>`<div class="wc"><div class="wn">${r.ref.nom}</div><div class="wr">Referidor · ${r.ref.pct}%</div><div class="wa" style="color:var(--pu)">${fmt(r.monto)}</div><div class="wd">por ${r.modelo}<br>${r.pagaModelo?'paga la modelo':'paga la agencia'}</div></div>`).join('')||'<div class="emp" style="grid-column:span 4">Sin referidos este mes</div>';
   $('pag-tb-ref').innerHTML=refData.length?refData.map(r=>{
     const k=pkKey(mes,'ref',r.ref.nom+'_'+r.modelo);const pg=DB.pagPagos[k];
-    return`<tr><td class="b">${r.ref.nom}</td><td>${r.modelo}</td><td style="font-size:10px;color:var(--t3)">${r.ref.wallet||'—'}</td><td>${r.ref.pct}%</td><td style="color:var(--gr)">${fmt(r.facturado)}</td><td style="color:var(--pu);font-weight:700">${r.pagaGastos?fmt(r.monto):'<span class="badge-np">No aplica</span>'}</td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar'}</button></td></tr>`;
+    return`<tr><td class="b">${r.ref.nom}</td><td>${r.modelo}</td><td style="font-size:10px;color:var(--t3)">${r.ref.wallet||'—'}</td><td>${r.ref.pct}%</td><td style="color:var(--gr)">${fmt(r.facturado)}</td><td style="color:var(--pu);font-weight:700">${fmt(r.monto)} <span class="tag ${r.pagaModelo?'tgr':'tr2'}" style="font-size:8px">${r.pagaModelo?'modelo':'agencia'}</span></td><td>${pg?'<span class="tag tg">Pagado</span>':'<span class="tag tgr">Pendiente</span>'}</td><td><button class="btn ${pg?'bg':'by'} bs" onclick="tglPago('${k}')">${pg?'Desmarcar':'Marcar'}</button></td></tr>`;
   }).join(''):'<tr><td colspan="8" class="emp">Sin referidos este mes</td></tr>';
 }
 
@@ -1813,7 +1813,7 @@ function rPagCEOs(){
   let totalPagMod=0,totalPagEq=0,totalPagRef=0;
   Object.entries(modMap).forEach(([nom,f])=>{const res=calcModelo(getModByNom(nom),f);const gC=res.pagaGastos?totalGas*0.5:0;totalPagMod+=res.pago+gC;});
   EQ.empleados.forEach(e=>{const res=calcEmpleado(e,mes);totalPagEq+=res.total;});
-  MODS.forEach(m=>{if(!m.referido)return;const f=modMap[m.nom]||0;const res=calcModelo(m,f);if(res.pagaGastos)totalPagRef+=f*m.referido.pct/100;});
+  MODS.forEach(m=>{if(!m.referido)return;const f=modMap[m.nom]||0;if(!f)return;totalPagRef+=f*m.referido.pct/100;});
   const totalCostos=totalPagMod+totalPagEq+totalPagRef+totalGas;
   const neto=Math.max(totalFac-totalCostos,0);
   // KPIs
@@ -1919,7 +1919,8 @@ function rModelos(){
           const facMod=modMap[m.nom]||0;
           const resM=calcModelo(m,facMod);
           const pagaGastos=resM.pagaGastos;
-          const ganRef=pagaGastos?(facMod*m.referido.pct/100):0;
+          const ganRef=facMod>0?(facMod*m.referido.pct/100):0;
+          const quienPaga=pagaGastos?'modelo':'agencia';
           return`<tr>
             <td class="b">${m.nom}</td>
             <td><span class="tag tgr">${m.nicho||'—'}</span></td>
@@ -1927,7 +1928,9 @@ function rModelos(){
             <td><span class="tag tp">${m.referido.pct}%</span></td>
             <td style="font-size:10px;color:var(--t3)">${m.referido.wallet||'— Sin wallet —'}</td>
             <td style="color:var(--gr)">${facMod>0?fmt(facMod):'Sin ingresos'}</td>
-            <td style="font-weight:600;color:${ganRef>0?'var(--pu)':'var(--t3)'}">${ganRef>0?fmt(ganRef):pagaGastos?'$0.00':'Modelo no paga gastos'}</td>
+            <td style="font-weight:600;color:${ganRef>0?'var(--pu)':'var(--t3)'}">
+              ${ganRef>0?`${fmt(ganRef)} <span style="font-size:9px;font-weight:400;color:${pagaGastos?'var(--t3)':'var(--re)'}">paga ${pagaGastos?'modelo':'agencia'}</span>`:'$0.00'}
+            </td>
           </tr>`;
         }).join('')}</tbody></table>`;
     } else {
