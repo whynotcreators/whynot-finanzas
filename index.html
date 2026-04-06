@@ -873,7 +873,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
       </div>
       <div class="kg k4" style="margin-bottom:14px">
         <div class="kc g"><div class="kl">Ingresos del período</div><div class="kv" id="liq-k-ing">$0</div><div class="kd">facturación total</div></div>
-        <div class="kc r"><div class="kl">Gastos totales</div><div class="kv" id="liq-k-gas">$0</div><div class="kd">todos los egresos</div></div>
+        <div class="kc r"><div class="kl">Egresos totales</div><div class="kv" id="liq-k-gas">$0</div><div class="kd">gastos + pagos a modelos</div></div>
         <div class="kc b"><div class="kl">Ganancia neta</div><div class="kv" id="liq-k-net">$0</div><div class="kd">a distribuir</div></div>
         <div class="kc n"><div class="kl">A cada socio</div><div class="kv" id="liq-k-cada">$0</div><div class="kd">50% de la ganancia neta</div></div>
       </div>
@@ -908,6 +908,20 @@ tbody td.b{color:var(--tx);font-weight:500;}
         <div class="sec"><div class="sh"><span class="st">Wallet de Agencia</span><span class="tag tg" id="liq-wallet-tag">$0</span></div>
           <div class="sb2"><div style="font-size:10px;color:var(--t3);margin-bottom:8px">Gastos pagados con la wallet de la agencia — se descuentan antes de distribuir.</div><div id="liq-wallet-lista" style="font-size:10px;color:var(--t2);max-height:180px;overflow-y:auto"></div></div>
         </div>
+      </div>
+      <!-- Desglose por modelo -->
+      <div class="sec" style="margin-top:14px">
+        <div class="sh">
+          <span class="st">Ganancia por Modelo</span>
+          <span style="font-size:9px;color:var(--t3)">Después de pago a la modelo y gastos operativos proporcionales</span>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Modelo</th><th>Facturado</th><th>Pago modelo</th><th>Gastos op. a cargo</th><th>Ganancia agencia</th><th>Agustín (50%)</th><th>Marco (50%)</th>
+          </tr></thead>
+          <tbody id="liq-mod-tb"></tbody>
+          <tfoot id="liq-mod-tf"></tfoot>
+        </table>
       </div>
     </div>
 
@@ -2397,12 +2411,16 @@ function rLiq(){
   if(!$('liq-mes').value)$('liq-mes').value=periodo;const mes=$('liq-mes').value;
   const fac=fpms(DB.fac,mes),gas=fpm(DB.gastos,mes);
   const totalIng=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
-  const neta=totalIng-totalGas,cadaSocio=neta/2;
+  // Descontar pagos a modelos (no están en gastos, son contratos)
+  const gasOp=gas.filter(x=>x.categoria!=='SALARIO').reduce((s,x)=>s+parseFloat(x.monto||0),0);
+  const modMap={};fac.forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
+  const totalMod=Object.entries(modMap).reduce((s,[nom,f])=>{const res=calcModelo(getModByNom(nom),f);const gC=res.pagaGastos?gasOp*0.5:0;return s+res.pago+gC;},0);
+  const neta=totalIng-totalGas-totalMod,cadaSocio=neta/2;
   const gasAgustin=gas.filter(x=>x.pagador==='Agustín'),gasMarco=gas.filter(x=>x.pagador==='Marco'),gasAgencia=gas.filter(x=>!x.pagador||x.pagador==='Agencia');
   const pagadoAgustin=gasAgustin.reduce((s,x)=>s+parseFloat(x.monto||0),0);const pagadoMarco=gasMarco.reduce((s,x)=>s+parseFloat(x.monto||0),0);const pagadoAgencia=gasAgencia.reduce((s,x)=>s+parseFloat(x.monto||0),0);
   const gasRepartibles=pagadoAgustin+pagadoMarco,cadaUnoDebePagar=gasRepartibles/2;
   const saldoAgustin=pagadoAgustin-cadaUnoDebePagar,saldoMarco=pagadoMarco-cadaUnoDebePagar;
-  $('liq-k-ing').textContent=fmt(totalIng);$('liq-k-gas').textContent=fmt(totalGas);$('liq-k-net').textContent=fmt(neta);$('liq-k-cada').textContent=fmt(cadaSocio);
+  $('liq-k-ing').textContent=fmt(totalIng);$('liq-k-gas').textContent=fmt(totalGas+totalMod);$('liq-k-net').textContent=fmt(neta);$('liq-k-cada').textContent=fmt(cadaSocio);
   $('liq-ag-pago').textContent=fmt(pagadoAgustin);$('liq-ag-debe').textContent=fmt(cadaUnoDebePagar);$('liq-ag-ganancia').textContent=fmt(cadaSocio);
   const agTag=saldoAgustin>=0?`Pago $${Math.abs(saldoAgustin).toFixed(2)} de mas`:`Debe $${Math.abs(saldoAgustin).toFixed(2)}`;$('liq-ag-tag').textContent=agTag;$('liq-ag-tag').className='tag '+(saldoAgustin>=0?'tg':'tr2');
   $('liq-ag-lista').innerHTML=gasAgustin.length?gasAgustin.map(x=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)"><span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span></div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
@@ -2414,6 +2432,38 @@ function rLiq(){
   else if(saldoAgustin>0){bal.innerHTML=`<div style="color:var(--ye);font-size:13px;margin-bottom:8px">Marco le debe a Agustin:</div><div style="font-size:28px;font-weight:700;color:var(--gr)">${fmt(Math.abs(saldoAgustin))}</div>`;}
   else{bal.innerHTML=`<div style="color:var(--ye);font-size:13px;margin-bottom:8px">Agustin le debe a Marco:</div><div style="font-size:28px;font-weight:700;color:var(--gr)">${fmt(Math.abs(saldoMarco))}</div>`;}
   $('liq-wallet-tag').textContent=fmt(pagadoAgencia);$('liq-wallet-lista').innerHTML=gasAgencia.length?gasAgencia.map(x=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)"><span style="color:var(--t2)">${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span></div>`).join(''):'<div style="color:var(--t3)">Sin gastos de agencia este mes</div>';
+
+  // ── Tabla desglose por modelo ──────────────────────────────
+  const pctAg=CEO_PCT?.agustin||50, pctMa=CEO_PCT?.marco||50;
+  const modMapLiq={};fac.forEach(x=>{modMapLiq[x.modelo]=(modMapLiq[x.modelo]||0)+parseFloat(x.monto||0);});
+  let sumFac=0,sumPagMod=0,sumGasOp=0,sumNetAg=0;
+  const rowsMod=Object.entries(modMapLiq).sort((a,b)=>b[1]-a[1]).map(([nom,facMod])=>{
+    const res=calcModelo(getModByNom(nom),facMod);
+    const gOpMod=res.pagaGastos?gasOp*0.5:0;
+    const netAg=facMod-res.pago-gOpMod;
+    const pAg=netAg*pctAg/100, pMa=netAg*pctMa/100;
+    sumFac+=facMod;sumPagMod+=res.pago;sumGasOp+=gOpMod;sumNetAg+=netAg;
+    return`<tr>
+      <td class="b">${nom}</td>
+      <td style="color:var(--gr)">${fmt(facMod)}</td>
+      <td style="color:var(--re)">${fmt(res.pago)} <span style="font-size:9px;color:var(--t3)">(${res.desc})</span></td>
+      <td style="color:var(--ye)">${gOpMod>0?fmt(gOpMod):'—'}</td>
+      <td style="color:var(--bl);font-weight:600">${fmt(netAg)}</td>
+      <td style="color:var(--gr);font-weight:600">${fmt(pAg)}</td>
+      <td style="color:var(--pu);font-weight:600">${fmt(pMa)}</td>
+    </tr>`;
+  });
+  const tb=$('liq-mod-tb');if(tb)tb.innerHTML=rowsMod.join('')||'<tr><td colspan="7" class="emp">Sin facturación este mes</td></tr>';
+  const tf=$('liq-mod-tf');
+  if(tf)tf.innerHTML=`<tr style="border-top:2px solid var(--br);background:var(--s2)">
+    <td style="font-weight:700;color:var(--tx)">Total</td>
+    <td style="color:var(--gr);font-weight:700">${fmt(sumFac)}</td>
+    <td style="color:var(--re);font-weight:700">${fmt(sumPagMod)}</td>
+    <td style="color:var(--ye);font-weight:700">${fmt(sumGasOp)}</td>
+    <td style="color:var(--bl);font-weight:700">${fmt(sumNetAg)}</td>
+    <td style="color:var(--gr);font-weight:700">${fmt(sumNetAg*pctAg/100)}</td>
+    <td style="color:var(--pu);font-weight:700">${fmt(sumNetAg*pctMa/100)}</td>
+  </tr>`;
 }
 
 // ═══════════════════════════════════════════════════
