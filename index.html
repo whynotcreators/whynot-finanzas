@@ -526,6 +526,12 @@ tbody td.b{color:var(--tx);font-weight:500;}
         <div><h1>Dashboard</h1><p id="dash-sub"></p></div>
         <div class="flt" style="margin-top:4px">
           <span style="font-size:9px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase">Filtrar:</span>
+          <select class="fsel" id="dash-rango" onchange="onDashRango()" style="font-size:11px">
+            <option value="mes">Mes específico</option>
+            <option value="3m">Últimos 3 meses</option>
+            <option value="6m">Últimos 6 meses</option>
+            <option value="anio">Año completo</option>
+          </select>
           <input type="month" class="finp" id="dash-fmes" onchange="rDash()" style="font-size:11px">
           <select class="fsel" id="dash-fnicho" onchange="onDashNicho()" style="font-size:11px"><option value="">Todos los nichos</option></select>
           <select class="fsel" id="dash-fmod" onchange="rDash()" style="font-size:11px"><option value="">Todos los modelos</option></select>
@@ -867,6 +873,12 @@ tbody td.b{color:var(--tx);font-weight:500;}
       <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
         <div><h1>Liquidación de Socios</h1><p>Distribución de ganancias y balances entre Agustín y Marco</p></div>
         <div class="flt" style="margin-top:4px">
+          <select class="fsel" id="liq-rango" onchange="onLiqRango()" style="font-size:11px">
+            <option value="mes">Mes específico</option>
+            <option value="3m">Últimos 3 meses</option>
+            <option value="6m">Últimos 6 meses</option>
+            <option value="anio">Año completo</option>
+          </select>
           <input type="month" class="finp" id="liq-mes" onchange="rLiq()" style="font-size:11px">
           <button class="btn bg bs" onclick="rLiq()">Calcular</button>
         </div>
@@ -1501,6 +1513,58 @@ function setPer(v){periodo=v;const a=document.querySelector('.pg.on');if(a)rFns[
 // ═══════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════
+// ── Helpers de rango ────────────────────────────────────────
+// Devuelve array de meses ['2026-01','2026-02',...] según el rango elegido
+function getMesesRango(rangoId, mesId){
+  const rango = $(rangoId)?.value || 'mes';
+  const mesActual = $(mesId)?.value || periodo;
+  if(rango === 'mes') return [mesActual];
+  const now = new Date();
+  const anio = mesActual ? mesActual.split('-')[0] : String(now.getFullYear());
+  if(rango === 'anio'){
+    return Array.from({length:12},(_,i)=>`${anio}-${String(i+1).padStart(2,'0')}`);
+  }
+  const n = rango === '3m' ? 3 : 6;
+  // últimos N meses desde el mes seleccionado (o actual)
+  const base = mesActual || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  return Array.from({length:n},(_,i)=>offP(base,-(n-1-i)));
+}
+// Mostrar/ocultar el input de mes según el rango
+function onLiqRango(){
+  const r=$('liq-rango')?.value||'mes';
+  const inp=$('liq-mes');
+  if(inp) inp.style.display = r==='mes'?'':'none';
+  rLiq();
+}
+function onDashRango(){
+  const r=$('dash-rango')?.value||'mes';
+  const inp=$('dash-fmes');
+  if(inp) inp.style.display = r==='mes'?'':'none';
+  rDash();
+}
+// Sumar facturación de un array de meses
+function facMeses(meses, fNicho='', fMod=''){
+  return meses.flatMap(m=>{
+    let f=fpms(DB.fac,m);
+    if(fNicho)f=f.filter(x=>(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho);
+    if(fMod)f=f.filter(x=>x.modelo===fMod);
+    return f;
+  });
+}
+function gasMeses(meses){
+  return meses.flatMap(m=>fpm(DB.gastos,m));
+}
+// Label legible para el rango
+function getRangoLabel(rangoId, mesId){
+  const r=$(rangoId)?.value||'mes';
+  const mes=$(mesId)?.value||periodo;
+  if(r==='mes') return getPL(mes);
+  if(r==='anio') return 'Año '+(mes||periodo).split('-')[0];
+  if(r==='3m') return 'Últimos 3 meses';
+  if(r==='6m') return 'Últimos 6 meses';
+  return getPL(mes);
+}
+
 function rDash(){
   const dfn=$('dash-fnicho');
   if(dfn){const cur=dfn.value;dfn.innerHTML='<option value="">Todos los nichos</option>'+NICHOS.map(n=>`<option${n===cur?' selected':''}>${n}</option>`).join('');}
@@ -1510,7 +1574,9 @@ function rDash(){
   const fMes=$('dash-fmes')?.value||'';
   const fMod=$('dash-fmod')?.value||'';
   const mesActivo=fMes||periodo;
-  let fac=fpms(DB.fac,mesActivo),gas=fpm(DB.gastos,mesActivo);
+  const mesesRango=getMesesRango('dash-rango','dash-fmes');
+  let fac=facMeses(mesesRango,fNicho,fMod);
+  let gas=gasMeses(mesesRango);
   if(fNicho)fac=fac.filter(x=>(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho);
   if(fMod)fac=fac.filter(x=>x.modelo===fMod);
   const tF=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),tG=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
@@ -1521,7 +1587,7 @@ function rDash(){
   setKPI('k-fac',tF,'k-fac-d',tF,pF);setKPI('k-gas',tG,'k-gas-d',tG,pG,true);
   $('k-net').textContent=fmt(neta);$('k-mar').textContent=fmtP(mar);
   const filtroLabel=(fNicho?' · '+fNicho:'')+(fMod?' · '+fMod:'')+(fMes?' · '+getPL(fMes):'');
-  $('dash-sub').textContent='Período: '+getPL(mesActivo)+filtroLabel+' · '+fac.length+' registros';
+  $('dash-sub').textContent='Período: '+getRangoLabel('dash-rango','dash-fmes')+filtroLabel+' · '+fac.length+' registros';
   const anio=mesActivo.split('-')[0];
   const facAAll=Array.from({length:12},(_,i)=>{const mo=`${anio}-${String(i+1).padStart(2,'0')}`;return fpms(DB.fac,mo).filter(x=>(!fNicho||(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho)&&(!fMod||x.modelo===fMod)).reduce((s,x)=>s+parseFloat(x.monto||0),0);});
   const facA=facAAll.reduce((s,v)=>s+v,0);
@@ -1549,7 +1615,7 @@ function rDash(){
   rChAnual(fMod,fNicho);rChDist(mesActivo);
 }
 function onDashNicho(){const dfm=$('dash-fmod');if(dfm)dfm.value='';rDash();}
-function clrDashFlt(){[$('dash-fmes'),$('dash-fnicho'),$('dash-fmod')].forEach(e=>{if(e)e.value='';});rDash();}
+function clrDashFlt(){[$('dash-fmes'),$('dash-fnicho'),$('dash-fmod')].forEach(e=>{if(e)e.value='';});const r=$('dash-rango');if(r)r.value='mes';const inp=$('dash-fmes');if(inp)inp.style.display='';rDash();}
 function setKPI(vi,val,di,curr,prev,inv=false){$(vi).textContent=fmt(val);const el=$(di);if(!prev){el.textContent='Sin datos previos';el.className='kd';return;}const p=((curr-prev)/prev)*100;el.textContent=(p>=0?'+ ':'- ')+Math.abs(p).toFixed(1)+'% vs mes anterior';el.className='kd '+((inv?p<=0:p>=0)?'up':'dn');}
 function rChAnual(fMod='',fNicho=''){
   const mesActivo=$('dash-fmes')?.value||periodo;const anio=mesActivo.split('-')[0],labels=[],fd=[],gd=[],md=[],nd=[];
@@ -2409,7 +2475,9 @@ function rAgente(){updateAgPanel();}
 // ═══════════════════════════════════════════════════
 function rLiq(){
   if(!$('liq-mes').value)$('liq-mes').value=periodo;const mes=$('liq-mes').value;
-  const fac=fpms(DB.fac,mes),gas=fpm(DB.gastos,mes);
+  const mesesRango=getMesesRango('liq-rango','liq-mes');
+  const fac=mesesRango.flatMap(m=>fpms(DB.fac,m));
+  const gas=mesesRango.flatMap(m=>fpm(DB.gastos,m));
   const totalIng=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
   // Descontar pagos a modelos (no están en gastos, son contratos)
   const gasOp=gas.filter(x=>x.categoria!=='SALARIO').reduce((s,x)=>s+parseFloat(x.monto||0),0);
@@ -2420,6 +2488,9 @@ function rLiq(){
   const pagadoAgustin=gasAgustin.reduce((s,x)=>s+parseFloat(x.monto||0),0);const pagadoMarco=gasMarco.reduce((s,x)=>s+parseFloat(x.monto||0),0);const pagadoAgencia=gasAgencia.reduce((s,x)=>s+parseFloat(x.monto||0),0);
   const gasRepartibles=pagadoAgustin+pagadoMarco,cadaUnoDebePagar=gasRepartibles/2;
   const saldoAgustin=pagadoAgustin-cadaUnoDebePagar,saldoMarco=pagadoMarco-cadaUnoDebePagar;
+  // Actualizar label período
+  const liqPeriodoEl=document.querySelector('#pg-liquidacion .ph p');
+  if(liqPeriodoEl)liqPeriodoEl.textContent='Distribución de ganancias · '+getRangoLabel('liq-rango','liq-mes');
   $('liq-k-ing').textContent=fmt(totalIng);$('liq-k-gas').textContent=fmt(totalGas+totalMod);$('liq-k-net').textContent=fmt(neta);$('liq-k-cada').textContent=fmt(cadaSocio);
   $('liq-ag-pago').textContent=fmt(pagadoAgustin);$('liq-ag-debe').textContent=fmt(cadaUnoDebePagar);$('liq-ag-ganancia').textContent=fmt(cadaSocio);
   const agTag=saldoAgustin>=0?`Pago $${Math.abs(saldoAgustin).toFixed(2)} de mas`:`Debe $${Math.abs(saldoAgustin).toFixed(2)}`;$('liq-ag-tag').textContent=agTag;$('liq-ag-tag').className='tag '+(saldoAgustin>=0?'tg':'tr2');
