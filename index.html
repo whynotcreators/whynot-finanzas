@@ -570,7 +570,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
         <div class="qa-t">+ Nuevo Registro</div>
         <div class="fg f4" style="margin-bottom:9px">
           <div class="fr"><label>Nicho</label><select id="fac-nicho" onchange="onFacNicho()"><option value="">— Seleccionar —</option></select></div>
-          <div class="fr"><label>Modelo</label><select id="fac-mod"><option value="">— Primero elegir nicho —</option></select></div>
+          <div class="fr"><label>Modelo</label><select id="fac-mod" onchange="chkFacEditor()"><option value="">— Primero elegir nicho —</option></select></div>
           <div class="fr"><label>Tipo de ingreso</label>
             <select id="fac-tipo" onchange="onFacTipo()">
               <option value="Suscripción">Suscripción</option>
@@ -599,6 +599,28 @@ tbody td.b{color:var(--tx);font-weight:500;}
                 <div>
                   <div class="calc-result" id="fac-horas-total">$0.00</div>
                   <div class="calc-detail" id="fac-horas-det">0 hs × $2/hora</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- CAMPO VIDEOS — visible cuando la modelo tiene editor por-video -->
+        <div id="fac-videos-wrap" style="display:none;margin-bottom:12px">
+          <div style="font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);font-weight:600;margin-bottom:6px">Videos editados este mes</div>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <div class="fr" style="max-width:160px">
+              <label>Editor asignado</label>
+              <input type="text" id="fac-editor-nom" readonly style="background:var(--s3);color:var(--t2);font-size:11px">
+            </div>
+            <div class="fr" style="max-width:120px">
+              <label>Videos editados</label>
+              <input type="number" id="fac-videos" placeholder="0" min="0" step="1" oninput="calcVideos()">
+            </div>
+            <div id="fac-videos-calc" style="display:none">
+              <div class="horas-box">
+                <div>
+                  <div class="calc-result" id="fac-videos-pct">3%</div>
+                  <div class="calc-detail" id="fac-videos-det">bajo umbral</div>
                 </div>
               </div>
             </div>
@@ -1037,6 +1059,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
               <option value="comision">Comisión</option>
               <option value="fijo+comision">Fijo + Comisión</option>
               <option value="hora+comision">Por hora + Comisión</option>
+              <option value="por-video">Por video (umbral)</option>
             </select>
           </div>
           <!-- Monto fijo — visible si tiene fijo -->
@@ -1047,6 +1070,9 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div class="fr" id="emp-sal-pct-w" style="display:none"><label>Comisión (%)</label><input type="number" id="emp-sal-pct" placeholder="8" min="0" max="100" step="0.1"></div>
           <!-- Techo — visible si tiene comisión -->
           <div class="fr" id="emp-sal-techo-w" style="display:none"><label>Techo comisión (USD)</label><input type="number" id="emp-sal-techo" placeholder="0 = sin techo" min="0"></div>
+          <div class="fr" id="emp-sal-vidpct-w" style="display:none"><label>% base (pocos videos)</label><input type="number" id="emp-sal-vidpct" placeholder="3" min="0" max="100" step="0.1"></div>
+          <div class="fr" id="emp-sal-vidumbral-w" style="display:none"><label>Umbral videos/mes</label><input type="number" id="emp-sal-vidumbral" placeholder="49" min="1"></div>
+          <div class="fr" id="emp-sal-vidpct2-w" style="display:none"><label>% si supera umbral</label><input type="number" id="emp-sal-vidpct2" placeholder="7" min="0" max="100" step="0.1"></div>
         </div>
         <!-- Modelos relacionadas — siempre visible, separado del sueldo -->
         <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Modelos relacionadas</div>
@@ -1178,6 +1204,7 @@ tbody td.b{color:var(--tx);font-weight:500;}
         <option value="comision">Comisión</option>
         <option value="fijo+comision">Fijo + Comisión</option>
         <option value="hora+comision">Por hora + Comisión</option>
+        <option value="por-video">Por video (umbral)</option>
       </select>
     </div>
     <div class="fg f3" style="margin-bottom:10px">
@@ -1185,6 +1212,9 @@ tbody td.b{color:var(--tx);font-weight:500;}
       <div class="fr" id="ee-hora-w" style="display:none"><label>Tarifa por hora (USD)</label><input type="number" id="ee-hora" placeholder="2" min="0" step="0.5"></div>
       <div class="fr" id="ee-pct-w" style="display:none"><label>Comisión (%)</label><input type="number" id="ee-pct" placeholder="8" min="0" max="100" step="0.1"></div>
       <div class="fr" id="ee-techo-w" style="display:none"><label>Techo comisión (USD)</label><input type="number" id="ee-techo" placeholder="0 = sin techo" min="0"></div>
+      <div class="fr" id="ee-vidpct-w" style="display:none"><label>% base (pocos videos)</label><input type="number" id="ee-vidpct" placeholder="3" min="0" max="100" step="0.1"></div>
+      <div class="fr" id="ee-vidumbral-w" style="display:none"><label>Umbral videos/mes</label><input type="number" id="ee-vidumbral" placeholder="49" min="1"></div>
+      <div class="fr" id="ee-vidpct2-w" style="display:none"><label>% si supera umbral</label><input type="number" id="ee-vidpct2" placeholder="7" min="0" max="100" step="0.1"></div>
     </div>
     <!-- Modelos relacionadas — siempre visible -->
     <div style="font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Modelos relacionadas</div>
@@ -1300,7 +1330,7 @@ async function sDB_gas_del(id){await sbDel('wf_gastos',`id=eq.${id}`);}
 async function sDB_pago(key,val){if(val){await sbUpsert('wf_pagos',[{id:key,pagado:val}]);}else{await sbDel('wf_pagos',`id=eq.${encodeURIComponent(key)}`);}}
 async function sMD(){if(!MODS.length)return;const rows=MODS.map(m=>({id:m.id,nom:m.nom,nicho:m.nicho||'',tipo:m.tipo,pct:m.pct||0,tramos:m.tramos||[],team:m.team||'',teams:m.teams||[],referido:m.referido||null}));await sbUpsert('wf_modelos',rows);}
 async function sMD_del(id){await sbDel('wf_modelos',`id=eq.${id}`);}
-async function sEQ(){if(!EQ.empleados.length)return;const rows=EQ.empleados.map(e=>({id:e.id,nom:e.nom,area:e.area||'',puesto:e.puesto,team:e.team||'',sal_tipo:e.salBase||'total',sal_fijo:e.salFijo||0,sal_pct:e.salPct||0,sal_techo:e.salTecho||0,sal_mods:e.salMods||'',sal_hora:e.salHora||0}));await sbUpsert('wf_equipo',rows);}
+async function sEQ(){if(!EQ.empleados.length)return;const rows=EQ.empleados.map(e=>({id:e.id,nom:e.nom,area:e.area||'',puesto:e.puesto,team:e.team||'',sal_tipo:e.salBase||'total',sal_fijo:e.salFijo||0,sal_pct:e.salPct||0,sal_techo:e.salTecho||0,sal_mods:e.salMods||'',sal_hora:e.salHora||0,sal_vid_pct:e.salVidPct||0,sal_vid_umbral:e.salVidUmbral||0,sal_vid_pct2:e.salVidPct2||0}));await sbUpsert('wf_equipo',rows);}
 async function sEQ_del(id){await sbDel('wf_equipo',`id=eq.${id}`);}
 async function sCFG(key,val){await sbUpsert('wf_config',[{key,value:val}]);}
 async function sNI(){await sCFG('nichos',NICHOS);}
@@ -1314,7 +1344,7 @@ async function loadFromSupabase(){
   showLoader('Conectando con Supabase...');
   try{
     const[fac,gas,pagos,mods,equipo,config]=await Promise.all([sbGet('wf_facturacion','order=mes.desc'),sbGet('wf_gastos','order=fecha.desc'),sbGet('wf_pagos'),sbGet('wf_modelos','order=nom.asc'),sbGet('wf_equipo','order=nom.asc'),sbGet('wf_config')]);
-    if(fac)DB.fac=fac.map(r=>({id:r.id,modelo:r.modelo,nicho:r.nicho,monto:parseFloat(r.monto),mes:r.mes,fecha:r.fecha,tipo:r.tipo,notas:r.notas}));
+    if(fac)DB.fac=fac.map(r=>({id:r.id,modelo:r.modelo,nicho:r.nicho,monto:parseFloat(r.monto),mes:r.mes,fecha:r.fecha,tipo:r.tipo,notas:r.notas,horas:parseFloat(r.horas||0),chatter:r.chatter||'',videos:parseFloat(r.videos||0)}));
     if(gas)DB.gastos=gas.map(r=>({id:r.id,categoria:r.categoria,descripcion:r.descripcion,monto:parseFloat(r.monto),fecha:r.fecha,area:r.area,puesto:r.puesto,team:r.team,empleado:r.empleado,software:r.software,modeloAsoc:r.modelo_asoc,pagador:r.pagador||'Agencia',notas:r.notas}));
     if(pagos)pagos.forEach(p=>{DB.pagPagos[p.id]=p.pagado;});
     if(mods)MODS=mods.map(r=>({id:r.id,nom:r.nom,nicho:r.nicho,tipo:r.tipo,pct:parseFloat(r.pct||0),tramos:r.tramos||[],team:r.team||'',teams:r.teams||[],referido:r.referido||null}));
@@ -1334,7 +1364,8 @@ async function loadFromSupabase(){
       else if(salBase==='comision'&&salFijo>0&&salPct===0)salBase='fijo';
       return{id:r.id,nom:r.nom,area:r.area,puesto:r.puesto,team:r.team,
         salBase,salFijo,salPct,salTecho:parseFloat(r.sal_techo||0),
-        salMods:r.sal_mods||'',salHora:parseFloat(r.sal_hora||0)};
+        salMods:r.sal_mods||'',salHora:parseFloat(r.sal_hora||0),
+        salVidPct:parseFloat(r.sal_vid_pct||0),salVidUmbral:parseFloat(r.sal_vid_umbral||0),salVidPct2:parseFloat(r.sal_vid_pct2||0)};
     });
     if(config){const cfgMap={};config.forEach(c=>{cfgMap[c.key]=c.value;});if(cfgMap.puestos)EQ.puestos=cfgMap.puestos;if(cfgMap.teams)EQ.teams=cfgMap.teams;if(cfgMap.nichos)NICHOS=cfgMap.nichos;if(cfgMap.cats)CATS=cfgMap.cats;if(cfgMap.objetivo)OBJ=cfgMap.objetivo;if(cfgMap.usuarios)USERS=cfgMap.usuarios;if(cfgMap.ceo_pct)CEO_PCT=cfgMap.ceo_pct;}
     hideLoader();return true;
@@ -1418,6 +1449,21 @@ function calcEmpleado(emp,mes){
       if(mods.length)dc+=` (${mods.join(', ')})`;
       partes.push(dc);
     }
+  }
+  // Esquema por-video
+  if(salTipo==='por-video'){
+    const pctBase=parseFloat(emp.salVidPct||0);
+    const umbral=parseFloat(emp.salVidUmbral||0);
+    const pctSupra=parseFloat(emp.salVidPct2||0);
+    // Sumar videos editados de sus modelos en este mes
+    const modsV=(emp.salMods||'').split(',').map(s=>s.trim()).filter(Boolean);
+    const facMesV=fpms(DB.fac,mes);
+    const totalVideos=facMesV.filter(x=>modsV.length===0||modsV.includes(x.modelo)).reduce((s,x)=>s+parseFloat(x.videos||0),0);
+    const pctAplicado=umbral>0&&totalVideos>umbral?pctSupra:pctBase;
+    const baseVid=facMesV.filter(x=>modsV.length===0||modsV.includes(x.modelo)).reduce((s,x)=>s+parseFloat(x.monto||0),0);
+    const montoVid=baseVid*pctAplicado/100;
+    const descVid=`${pctAplicado}% (${totalVideos} videos${umbral>0?(totalVideos>umbral?' > umbral '+umbral:' ≤ umbral '+umbral):''})`;
+    return{total:montoVid,base:baseVid,desc:descVid,videos:totalVideos};
   }
   const desc=partes.length?partes.join(' + '):'Sin sueldo configurado';
   return{total,base:totalFac,desc};
@@ -1540,6 +1586,25 @@ function calcHoras(){
   }
 }
 
+function calcVideos(){
+  const videos=parseFloat($('fac-videos').value||0);
+  const calc=$('fac-videos-calc');
+  if(videos>0){
+    // buscar editor de esta modelo
+    const mod=$('fac-mod').value;
+    const editor=EQ.empleados.find(e=>e.salBase==='por-video'&&(e.salMods||'').split(',').map(s=>s.trim()).includes(mod));
+    if(editor){
+      const umbral=parseFloat(editor.salVidUmbral||0);
+      const pct=umbral>0&&videos>umbral?parseFloat(editor.salVidPct2||0):parseFloat(editor.salVidPct||0);
+      calc.style.display='block';
+      $('fac-videos-pct').textContent=pct+'%';
+      $('fac-videos-det').textContent=videos+(umbral>0?(videos>umbral?' videos — supera umbral ('+umbral+')':' videos — bajo umbral ('+umbral+')'):'');
+    }
+  } else {
+    calc.style.display='none';
+  }
+}
+
 function popFacSelects(){
   const fn=$('fac-nicho');if(fn){fn.innerHTML='<option value="">— Nicho —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
   const ffn=$('fac-fn');if(ffn){ffn.innerHTML='<option value="">Todos los nichos</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
@@ -1549,6 +1614,21 @@ function onFacNicho(){
   const nicho=$('fac-nicho').value;
   const mods=MODS.filter(m=>m.nicho===nicho||!nicho);
   $('fac-mod').innerHTML='<option value="">— Modelo —</option>'+mods.map(m=>`<option>${m.nom}</option>`).join('');
+  chkFacEditor();
+}
+function chkFacEditor(){
+  const mod=$('fac-mod').value;
+  const editor=mod?EQ.empleados.find(e=>e.salBase==='por-video'&&(e.salMods||'').split(',').map(s=>s.trim()).includes(mod)):null;
+  const wrap=$('fac-videos-wrap');
+  if(editor&&wrap){
+    wrap.style.display='block';
+    $('fac-editor-nom').value=editor.nom;
+    $('fac-videos').value='';
+    $('fac-videos-calc').style.display='none';
+  } else if(wrap){
+    wrap.style.display='none';
+    $('fac-videos').value='';
+  }
 }
 async function addFac(){
   const mod=$('fac-mod').value,monto=parseFloat($('fac-monto').value||0);
@@ -1559,11 +1639,13 @@ async function addFac(){
   const modObj=getModByNom(mod);
   const horas = tipo === 'Chatting' ? parseFloat($('fac-horas').value || 0) : 0;
   const chatter = tipo === 'Chatting' ? $('fac-chatter').value : '';
-  const newFac={id:uid(),modelo:mod,nicho:modObj?.nicho||'',monto,mes,fecha,tipo,notas:$('fac-notas').value.trim(),horas,chatter};
+  const videos = parseFloat($('fac-videos').value || 0);
+  const newFac={id:uid(),modelo:mod,nicho:modObj?.nicho||'',monto,mes,fecha,tipo,notas:$('fac-notas').value.trim(),horas,chatter,videos};
   DB.fac.push(newFac);
   await sDB_fac(newFac);
   $('fac-monto').value='';$('fac-notas').value='';$('fac-horas').value='';
   $('fac-horas-calc').style.display='none';
+  $('fac-videos').value='';$('fac-videos-calc').style.display='none';$('fac-videos-wrap').style.display='none';
   rFac();notif('Registrado');
 }
 // Override sDB_fac para incluir horas y chatter
@@ -1571,7 +1653,7 @@ async function sDB_fac(row){
   await sbUpsert('wf_facturacion',[{
     id:row.id,modelo:row.modelo,nicho:row.nicho||'',monto:row.monto,
     mes:row.mes,fecha:row.fecha||null,tipo:row.tipo||'Chatting',notas:row.notas||'',
-    horas:row.horas||0,chatter:row.chatter||''
+    horas:row.horas||0,chatter:row.chatter||'',videos:row.videos||0
   }]);
 }
 function rFac(){
@@ -2056,13 +2138,18 @@ function updEmpSalTipo(){
   const tieneFijo=t==='fijo'||t==='fijo+comision';
   const tieneHora=t==='hora'||t==='hora+comision';
   const tieneComision=t==='comision'||t==='fijo+comision'||t==='hora+comision';
+  const tieneVideo=t==='por-video';
   $('emp-sal-fijo-w').style.display=tieneFijo?'flex':'none';
   $('emp-sal-hora-w').style.display=tieneHora?'flex':'none';
   $('emp-sal-pct-w').style.display=tieneComision?'flex':'none';
   $('emp-sal-techo-w').style.display=tieneComision?'flex':'none';
+  $('emp-sal-vidpct-w').style.display=tieneVideo?'flex':'none';
+  $('emp-sal-vidumbral-w').style.display=tieneVideo?'flex':'none';
+  $('emp-sal-vidpct2-w').style.display=tieneVideo?'flex':'none';
   if(!tieneComision){$('emp-sal-pct').value='';$('emp-sal-techo').value='';}
   if(!tieneFijo)$('emp-sal-fijo').value='';
   if(!tieneHora)$('emp-sal-hora').value='';
+  if(!tieneVideo){$('emp-sal-vidpct').value='';$('emp-sal-vidumbral').value='';$('emp-sal-vidpct2').value='';}
 }
 
 // ─── Cascada nicho→modelo — formulario nuevo ───
@@ -2164,7 +2251,11 @@ async function addEmp(){
     salBase:salTipo,salFijo:parseFloat($('emp-sal-fijo').value||0),
     salHora:parseFloat($('emp-sal-hora').value||0),
     salPct:parseFloat($('emp-sal-pct').value||0),
-    salTecho:parseFloat($('emp-sal-techo').value||0),salMods};
+    salTecho:parseFloat($('emp-sal-techo').value||0),
+    salVidPct:parseFloat($('emp-sal-vidpct').value||0),
+    salVidUmbral:parseFloat($('emp-sal-vidumbral').value||0),
+    salVidPct2:parseFloat($('emp-sal-vidpct2').value||0),
+    salMods};
   EQ.empleados.push(emp);await sEQ();
   $('emp-nom').value='';$('emp-sal-fijo').value='';$('emp-sal-pct').value='';
   $('emp-sal-techo').value='';$('emp-sal-hora').value='';
@@ -2189,6 +2280,9 @@ function openEmp(id){
   $('ee-hora').value=e.salHora||'';
   $('ee-pct').value=e.salPct||'';
   $('ee-techo').value=e.salTecho||'';
+  $('ee-vidpct').value=e.salVidPct||'';
+  $('ee-vidumbral').value=e.salVidUmbral||'';
+  $('ee-vidpct2').value=e.salVidPct2||'';
   // modelos relacionadas
   const sn=$('ee-sal-nicho');
   if(sn){sn.innerHTML='<option value="">— Todos los nichos —</option>'+NICHOS.map(n=>`<option>${n}</option>`).join('');}
@@ -2206,10 +2300,14 @@ function updEeSalTipo(){
   const tieneFijo=t==='fijo'||t==='fijo+comision';
   const tieneHora=t==='hora'||t==='hora+comision';
   const tieneComision=t==='comision'||t==='fijo+comision'||t==='hora+comision';
+  const tieneVideo=t==='por-video';
   $('ee-fijo-w').style.display=tieneFijo?'flex':'none';
   $('ee-hora-w').style.display=tieneHora?'flex':'none';
   $('ee-pct-w').style.display=tieneComision?'flex':'none';
   $('ee-techo-w').style.display=tieneComision?'flex':'none';
+  $('ee-vidpct-w').style.display=tieneVideo?'flex':'none';
+  $('ee-vidumbral-w').style.display=tieneVideo?'flex':'none';
+  $('ee-vidpct2-w').style.display=tieneVideo?'flex':'none';
 }
 
 // ─── Cascada nicho→modelo — modal editar ───
@@ -2227,7 +2325,11 @@ async function saveEe(){
     nom:$('ee-nom').value.trim(),area:$('ee-area').value,puesto:$('ee-puesto').value,team:$('ee-team').value,
     salBase:$('ee-sal-tipo').value,
     salFijo:parseFloat($('ee-fijo').value||0),salHora:parseFloat($('ee-hora').value||0),
-    salPct:parseFloat($('ee-pct').value||0),salTecho:parseFloat($('ee-techo').value||0),salMods};
+    salPct:parseFloat($('ee-pct').value||0),salTecho:parseFloat($('ee-techo').value||0),
+    salVidPct:parseFloat($('ee-vidpct').value||0),
+    salVidUmbral:parseFloat($('ee-vidumbral').value||0),
+    salVidPct2:parseFloat($('ee-vidpct2').value||0),
+    salMods};
   await sEQ();clsEmpMod();rEquipo();notif('Actualizado');
 }
 function clsEmpMod(){$('emp-modal').classList.remove('on');}
