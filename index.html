@@ -1723,7 +1723,7 @@ function pagTab(t,el){pagTabAct=t;document.querySelectorAll('.tabb').forEach(x=>
 function pkKey(mes,tipo,nom){return`${mes}|${tipo}|${nom}`;}
 function rPagos(){
   if(!$('pag-mes').value)$('pag-mes').value=periodo;
-  const mes=$('pag-mes').value||periodo;
+  const mes=$('pag-mes').value;
   const fac=fpms(DB.fac,mes),gas=fpm(DB.gastos,mes);
   const totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
   const pft=$('pag-team-flt');if(pft)pft.innerHTML='<option value="">Todos los teams</option>'+EQ.teams.map(t=>`<option>${t}</option>`).join('');
@@ -1752,7 +1752,7 @@ function rPagos(){
   rPagCEOs();
 }
 function rPagChatters(){
-  const mes=$('pag-mes').value||periodo;const teamFlt=$('pag-team-flt')?.value||'';
+  const mes=$('pag-mes').value;const teamFlt=$('pag-team-flt')?.value||'';
   let chatEmps=EQ.empleados.filter(e=>e.puesto==='Chatter');if(teamFlt)chatEmps=chatEmps.filter(e=>e.team===teamFlt);
   const chData=chatEmps.map(emp=>{const res=calcEmpleado(emp,mes);return{...emp,total:res.total,desc:res.desc};});
   const totalCh=chData.reduce((s,e)=>s+e.total,0);
@@ -1764,7 +1764,7 @@ async function tglPago(k){DB.pagPagos[k]=!DB.pagPagos[k];await sDB_pago(k,DB.pag
 
 // ─── REFERIDOS ───────────────────────────────────────
 function rPagReferidos(){
-  const mes=$('pag-mes').value||periodo;
+  const mes=$('pag-mes').value;
   const fac=fpms(DB.fac,mes);
   // agrupar facturación por modelo
   const modMap={};fac.forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
@@ -1804,7 +1804,7 @@ async function saveCeoPct(){
   notif('Porcentajes guardados');rPagos();
 }
 function rPagCEOs(){
-  const mes=$('pag-mes').value||periodo;
+  const mes=$('pag-mes').value;
   const fac=fpms(DB.fac,mes),gas=fpm(DB.gastos,mes);
   const totalFac=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0);
   const totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
@@ -2268,7 +2268,7 @@ function rAgente(){updateAgPanel();}
 // LIQUIDACIÓN
 // ═══════════════════════════════════════════════════
 function rLiq(){
-  if(!$('liq-mes').value)$('liq-mes').value=periodo;const mes=$('liq-mes').value||periodo;
+  if(!$('liq-mes').value)$('liq-mes').value=periodo;const mes=$('liq-mes').value;
   const fac=fpms(DB.fac,mes),gas=fpm(DB.gastos,mes);
   const totalIng=fac.reduce((s,x)=>s+parseFloat(x.monto||0),0),totalGas=gas.reduce((s,x)=>s+parseFloat(x.monto||0),0);
   const neta=totalIng-totalGas,cadaSocio=neta/2;
