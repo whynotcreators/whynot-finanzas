@@ -902,8 +902,8 @@ tbody td.b{color:var(--tx);font-weight:500;}
               <div style="font-size:16px;font-weight:600;color:var(--gr)" id="liq-ag-ganancia">$0</div>
               <div style="font-size:9px;color:var(--t3);margin:6px 0 2px" id="liq-ag-saldo-lbl"></div>
               <div style="border-top:1px solid var(--br);margin:6px 0"></div>
-              <div style="font-size:9px;color:var(--t3);margin-bottom:2px">A recibir / transferir</div>
-              <div style="font-size:22px;font-weight:700;color:var(--bl)" id="liq-ag-final">$0</div>
+              <div style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px" id="liq-ag-final-lbl">A recibir</div>
+              <div style="font-size:22px;font-weight:700" id="liq-ag-final">$0</div>
             </div>
             <div style="font-size:9px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Gastos que pagó</div>
             <div id="liq-ag-lista" style="font-size:10px;color:var(--t2);max-height:150px;overflow-y:auto"></div>
@@ -921,8 +921,8 @@ tbody td.b{color:var(--tx);font-weight:500;}
               <div style="font-size:16px;font-weight:600;color:var(--gr)" id="liq-ma-ganancia">$0</div>
               <div style="font-size:9px;color:var(--t3);margin:6px 0 2px" id="liq-ma-saldo-lbl"></div>
               <div style="border-top:1px solid var(--br);margin:6px 0"></div>
-              <div style="font-size:9px;color:var(--t3);margin-bottom:2px">A recibir / transferir</div>
-              <div style="font-size:22px;font-weight:700;color:var(--bl)" id="liq-ma-final">$0</div>
+              <div style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px" id="liq-ma-final-lbl">A recibir</div>
+              <div style="font-size:22px;font-weight:700" id="liq-ma-final">$0</div>
             </div>
             <div style="font-size:9px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Gastos que pagó</div>
             <div id="liq-ma-lista" style="font-size:10px;color:var(--t2);max-height:150px;overflow-y:auto"></div>
@@ -2505,6 +2505,13 @@ function rLiq(){
   // Actualizar label período
   const liqPeriodoEl=document.querySelector('#pg-liquidacion .ph p');
   if(liqPeriodoEl)liqPeriodoEl.textContent='Distribución de ganancias · '+getRangoLabel('liq-rango','liq-mes');
+  // Aviso si no hay ingresos
+  const liqWarn=$('liq-warn');
+  if(totalIng<=0){
+    if(!liqWarn){const w=document.createElement('div');w.id='liq-warn';w.style.cssText='background:rgba(198,40,40,.08);border:1px solid rgba(198,40,40,.2);border-radius:8px;padding:10px 16px;font-size:11px;color:var(--re);margin-bottom:14px';w.textContent='Sin ingresos registrados en este período. Los números reflejan solo gastos pagados por los socios.';document.querySelector('#pg-liquidacion .kg').before(w);}
+  } else {
+    if(liqWarn)liqWarn.remove();
+  }
   $('liq-k-ing').textContent=fmt(totalIng);$('liq-k-gas').textContent=fmt(totalGas+totalMod);$('liq-k-net').textContent=fmt(neta);$('liq-k-cada').textContent=fmt(cadaSocio);
   // "A recibir" = ganancia del socio + saldo de gastos (positivo si pagó de más, negativo si debe)
   const finalAg = cadaSocio + saldoAgustin;
@@ -2518,7 +2525,17 @@ function rLiq(){
     else if(saldoAgustin>0){agSaldoEl.innerHTML=`<span style="color:var(--gr)">+ ${fmt(saldoAgustin)}</span> · Marco le debe por gastos`;}
     else{agSaldoEl.innerHTML=`<span style="color:var(--re)">${fmt(saldoAgustin)}</span> · Debe a Marco por gastos`;}
   }
-  $('liq-ag-final').textContent=fmt(finalAg);
+  // Label y color dinámico según si recibe o transfiere
+  const agLblEl=$('liq-ag-final-lbl'), agFinEl=$('liq-ag-final');
+  if(agLblEl&&agFinEl){
+    if(finalAg>=0){
+      agLblEl.textContent='A recibir';agLblEl.style.color='var(--gr)';
+      agFinEl.style.color='var(--gr)';agFinEl.textContent=fmt(finalAg);
+    } else {
+      agLblEl.textContent='A transferir a Marco';agLblEl.style.color='var(--re)';
+      agFinEl.style.color='var(--re)';agFinEl.textContent=fmt(Math.abs(finalAg));
+    }
+  }
   const agTag=saldoAgustin>=0?`Pagó $${Math.abs(saldoAgustin).toFixed(2)} de más`:`Debe $${Math.abs(saldoAgustin).toFixed(2)}`;$('liq-ag-tag').textContent=agTag;$('liq-ag-tag').className='tag '+(saldoAgustin>=0?'tg':'tr2');
   $('liq-ag-lista').innerHTML=gasAgustin.length?gasAgustin.map(x=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)"><span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span></div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
 
@@ -2530,7 +2547,16 @@ function rLiq(){
     else if(saldoMarco>0){maSaldoEl.innerHTML=`<span style="color:var(--gr)">+ ${fmt(saldoMarco)}</span> · Agustín le debe por gastos`;}
     else{maSaldoEl.innerHTML=`<span style="color:var(--re)">${fmt(saldoMarco)}</span> · Debe a Agustín por gastos`;}
   }
-  $('liq-ma-final').textContent=fmt(finalMa);
+  const maLblEl=$('liq-ma-final-lbl'), maFinEl=$('liq-ma-final');
+  if(maLblEl&&maFinEl){
+    if(finalMa>=0){
+      maLblEl.textContent='A recibir';maLblEl.style.color='var(--gr)';
+      maFinEl.style.color='var(--gr)';maFinEl.textContent=fmt(finalMa);
+    } else {
+      maLblEl.textContent='A transferir a Agustín';maLblEl.style.color='var(--re)';
+      maFinEl.style.color='var(--re)';maFinEl.textContent=fmt(Math.abs(finalMa));
+    }
+  }
   const maTag=saldoMarco>=0?`Pagó $${Math.abs(saldoMarco).toFixed(2)} de más`:`Debe $${Math.abs(saldoMarco).toFixed(2)}`;$('liq-ma-tag').textContent=maTag;$('liq-ma-tag').className='tag '+(saldoMarco>=0?'tg':'tr2');
   $('liq-ma-lista').innerHTML=gasMarco.length?gasMarco.map(x=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)"><span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span></div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
   const bal=$('liq-balance');
