@@ -2513,9 +2513,11 @@ function rLiq(){
     if(liqWarn)liqWarn.remove();
   }
   $('liq-k-ing').textContent=fmt(totalIng);$('liq-k-gas').textContent=fmt(totalGas+totalMod);$('liq-k-net').textContent=fmt(neta);$('liq-k-cada').textContent=fmt(cadaSocio);
-  // "A recibir" = ganancia del socio + saldo de gastos (positivo si pagó de más, negativo si debe)
-  const finalAg = cadaSocio + saldoAgustin;
-  const finalMa = cadaSocio + saldoMarco;
+  // "A recibir" = ganancia del socio + saldo de gastos
+  // Si no hay ingresos, la "ganancia" negativa no se transfiere entre socios
+  // — solo se salda quién pagó más gastos que el otro
+  const finalAg = totalIng > 0 ? cadaSocio + saldoAgustin : saldoAgustin;
+  const finalMa = totalIng > 0 ? cadaSocio + saldoMarco : saldoMarco;
 
   $('liq-ag-pago').textContent=fmt(pagadoAgustin);$('liq-ag-debe').textContent=fmt(cadaUnoDebePagar);$('liq-ag-ganancia').textContent=fmt(cadaSocio);
   // Saldo label Agustín
