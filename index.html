@@ -897,7 +897,14 @@ tbody td.b{color:var(--tx);font-weight:500;}
               <div style="background:var(--s1);border-radius:4px;padding:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Pagó en gastos</div><div style="font-size:16px;font-weight:700;color:var(--re)" id="liq-ag-pago">$0</div></div>
               <div style="background:var(--s1);border-radius:4px;padding:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Le corresponde pagar</div><div style="font-size:16px;font-weight:700;color:var(--ye)" id="liq-ag-debe">$0</div></div>
             </div>
-            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta a recibir</div><div style="font-size:20px;font-weight:700;color:var(--gr)" id="liq-ag-ganancia">$0</div></div>
+            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px">
+              <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta (50%)</div>
+              <div style="font-size:16px;font-weight:600;color:var(--gr)" id="liq-ag-ganancia">$0</div>
+              <div style="font-size:9px;color:var(--t3);margin:6px 0 2px" id="liq-ag-saldo-lbl"></div>
+              <div style="border-top:1px solid var(--br);margin:6px 0"></div>
+              <div style="font-size:9px;color:var(--t3);margin-bottom:2px">A recibir / transferir</div>
+              <div style="font-size:22px;font-weight:700;color:var(--bl)" id="liq-ag-final">$0</div>
+            </div>
             <div style="font-size:9px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Gastos que pagó</div>
             <div id="liq-ag-lista" style="font-size:10px;color:var(--t2);max-height:150px;overflow-y:auto"></div>
           </div>
@@ -909,7 +916,14 @@ tbody td.b{color:var(--tx);font-weight:500;}
               <div style="background:var(--s1);border-radius:4px;padding:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Pagó en gastos</div><div style="font-size:16px;font-weight:700;color:var(--re)" id="liq-ma-pago">$0</div></div>
               <div style="background:var(--s1);border-radius:4px;padding:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Le corresponde pagar</div><div style="font-size:16px;font-weight:700;color:var(--ye)" id="liq-ma-debe">$0</div></div>
             </div>
-            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px"><div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta a recibir</div><div style="font-size:20px;font-weight:700;color:var(--gr)" id="liq-ma-ganancia">$0</div></div>
+            <div style="background:var(--s1);border-radius:4px;padding:10px;margin-bottom:10px">
+              <div style="font-size:9px;color:var(--t3);margin-bottom:4px">Ganancia neta (50%)</div>
+              <div style="font-size:16px;font-weight:600;color:var(--gr)" id="liq-ma-ganancia">$0</div>
+              <div style="font-size:9px;color:var(--t3);margin:6px 0 2px" id="liq-ma-saldo-lbl"></div>
+              <div style="border-top:1px solid var(--br);margin:6px 0"></div>
+              <div style="font-size:9px;color:var(--t3);margin-bottom:2px">A recibir / transferir</div>
+              <div style="font-size:22px;font-weight:700;color:var(--bl)" id="liq-ma-final">$0</div>
+            </div>
             <div style="font-size:9px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Gastos que pagó</div>
             <div id="liq-ma-lista" style="font-size:10px;color:var(--t2);max-height:150px;overflow-y:auto"></div>
           </div>
@@ -2492,11 +2506,32 @@ function rLiq(){
   const liqPeriodoEl=document.querySelector('#pg-liquidacion .ph p');
   if(liqPeriodoEl)liqPeriodoEl.textContent='Distribución de ganancias · '+getRangoLabel('liq-rango','liq-mes');
   $('liq-k-ing').textContent=fmt(totalIng);$('liq-k-gas').textContent=fmt(totalGas+totalMod);$('liq-k-net').textContent=fmt(neta);$('liq-k-cada').textContent=fmt(cadaSocio);
+  // "A recibir" = ganancia del socio + saldo de gastos (positivo si pagó de más, negativo si debe)
+  const finalAg = cadaSocio + saldoAgustin;
+  const finalMa = cadaSocio + saldoMarco;
+
   $('liq-ag-pago').textContent=fmt(pagadoAgustin);$('liq-ag-debe').textContent=fmt(cadaUnoDebePagar);$('liq-ag-ganancia').textContent=fmt(cadaSocio);
-  const agTag=saldoAgustin>=0?`Pago $${Math.abs(saldoAgustin).toFixed(2)} de mas`:`Debe $${Math.abs(saldoAgustin).toFixed(2)}`;$('liq-ag-tag').textContent=agTag;$('liq-ag-tag').className='tag '+(saldoAgustin>=0?'tg':'tr2');
+  // Saldo label Agustín
+  const agSaldoEl=$('liq-ag-saldo-lbl');
+  if(agSaldoEl){
+    if(Math.abs(saldoAgustin)<0.01){agSaldoEl.textContent='Sin ajuste de gastos';}
+    else if(saldoAgustin>0){agSaldoEl.innerHTML=`<span style="color:var(--gr)">+ ${fmt(saldoAgustin)}</span> · Marco le debe por gastos`;}
+    else{agSaldoEl.innerHTML=`<span style="color:var(--re)">${fmt(saldoAgustin)}</span> · Debe a Marco por gastos`;}
+  }
+  $('liq-ag-final').textContent=fmt(finalAg);
+  const agTag=saldoAgustin>=0?`Pagó $${Math.abs(saldoAgustin).toFixed(2)} de más`:`Debe $${Math.abs(saldoAgustin).toFixed(2)}`;$('liq-ag-tag').textContent=agTag;$('liq-ag-tag').className='tag '+(saldoAgustin>=0?'tg':'tr2');
   $('liq-ag-lista').innerHTML=gasAgustin.length?gasAgustin.map(x=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)"><span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span></div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
+
   $('liq-ma-pago').textContent=fmt(pagadoMarco);$('liq-ma-debe').textContent=fmt(cadaUnoDebePagar);$('liq-ma-ganancia').textContent=fmt(cadaSocio);
-  const maTag=saldoMarco>=0?`Pago $${Math.abs(saldoMarco).toFixed(2)} de mas`:`Debe $${Math.abs(saldoMarco).toFixed(2)}`;$('liq-ma-tag').textContent=maTag;$('liq-ma-tag').className='tag '+(saldoMarco>=0?'tg':'tr2');
+  // Saldo label Marco
+  const maSaldoEl=$('liq-ma-saldo-lbl');
+  if(maSaldoEl){
+    if(Math.abs(saldoMarco)<0.01){maSaldoEl.textContent='Sin ajuste de gastos';}
+    else if(saldoMarco>0){maSaldoEl.innerHTML=`<span style="color:var(--gr)">+ ${fmt(saldoMarco)}</span> · Agustín le debe por gastos`;}
+    else{maSaldoEl.innerHTML=`<span style="color:var(--re)">${fmt(saldoMarco)}</span> · Debe a Agustín por gastos`;}
+  }
+  $('liq-ma-final').textContent=fmt(finalMa);
+  const maTag=saldoMarco>=0?`Pagó $${Math.abs(saldoMarco).toFixed(2)} de más`:`Debe $${Math.abs(saldoMarco).toFixed(2)}`;$('liq-ma-tag').textContent=maTag;$('liq-ma-tag').className='tag '+(saldoMarco>=0?'tg':'tr2');
   $('liq-ma-lista').innerHTML=gasMarco.length?gasMarco.map(x=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--br)"><span>${x.descripcion}</span><span style="color:var(--re)">${fmt(x.monto)}</span></div>`).join(''):'<div style="color:var(--t3)">Sin gastos este mes</div>';
   const bal=$('liq-balance');
   if(Math.abs(saldoAgustin)<0.01){bal.innerHTML=`<div style="color:var(--gr);font-size:16px;font-weight:700">Estan al dia</div><div style="color:var(--t3);font-size:11px;margin-top:6px">Ambos pagaron lo mismo</div>`;}
