@@ -532,6 +532,11 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <button class="btn bg bs" onclick="clrDashFlt()">x Limpiar</button>
         </div>
       </div>
+      <!-- Gráfico principal — vista mes a mes de la agencia -->
+      <div class="sec" style="margin-bottom:14px">
+        <div class="sh"><span class="st">Evolución Mensual — Año en Curso</span></div>
+        <div class="sb2"><div class="cw" style="height:200px"><canvas id="ch-anual"></canvas></div></div>
+      </div>
       <div class="kg k4">
         <div class="kc g"><div class="kl">Facturación Total</div><div class="kv" id="k-fac">$0</div><div class="kd" id="k-fac-d">—</div></div>
         <div class="kc r"><div class="kl">Gastos Totales</div><div class="kv" id="k-gas">$0</div><div class="kd" id="k-gas-d">—</div></div>
@@ -549,13 +554,10 @@ tbody td.b{color:var(--tx);font-weight:500;}
           <div style="display:flex;justify-content:space-between;margin-top:4px"><span style="font-size:9px;color:var(--t3)" id="obj-falta"></span><span style="font-size:9px;color:var(--t3)" id="obj-prom"></span></div>
         </div>
       </div>
-      <div class="cr2">
-        <div class="sec"><div class="sh"><span class="st">Facturación Mensual — Año en Curso</span></div><div class="sb2"><div class="cw"><canvas id="ch-anual"></canvas></div></div></div>
-        <div class="sec"><div class="sh"><span class="st">Gastos por Categoría</span></div><div class="sb2"><div class="cw"><canvas id="ch-dist"></canvas></div></div></div>
-      </div>
+
       <div class="two">
         <div class="sec"><div class="sh"><span class="st">Facturación vs Pagos por Modelo</span></div><div class="sb2" id="dash-mod-ratio"></div></div>
-        <div class="sec"><div class="sh"><span class="st">Resumen de Costos</span></div><div class="sb2" id="dash-costos"></div></div>
+        <div class="sec"><div class="sh"><span class="st">Resumen de Costos</span></div><div class="sb2" id="dash-costos"></div><div class="sb2" style="padding-top:0"><div class="cw" style="height:140px"><canvas id="ch-dist"></canvas></div></div></div>
       </div>
       <div class="sec">
         <div class="sh"><span class="st">Comparación por Nicho</span><span class="tag tg" id="dash-nicho-total">Total: $0</span></div>
@@ -1536,10 +1538,32 @@ function onDashNicho(){const dfm=$('dash-fmod');if(dfm)dfm.value='';rDash();}
 function clrDashFlt(){[$('dash-fmes'),$('dash-fnicho'),$('dash-fmod')].forEach(e=>{if(e)e.value='';});rDash();}
 function setKPI(vi,val,di,curr,prev,inv=false){$(vi).textContent=fmt(val);const el=$(di);if(!prev){el.textContent='Sin datos previos';el.className='kd';return;}const p=((curr-prev)/prev)*100;el.textContent=(p>=0?'+ ':'- ')+Math.abs(p).toFixed(1)+'% vs mes anterior';el.className='kd '+((inv?p<=0:p>=0)?'up':'dn');}
 function rChAnual(fMod='',fNicho=''){
-  const mesActivo=$('dash-fmes')?.value||periodo;const anio=mesActivo.split('-')[0],labels=[],fd=[],gd=[];
-  for(let i=1;i<=12;i++){const mo=`${anio}-${String(i).padStart(2,'0')}`;labels.push(['','ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][i]);let facMo=fpms(DB.fac,mo);if(fNicho)facMo=facMo.filter(x=>(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho);if(fMod)facMo=facMo.filter(x=>x.modelo===fMod);fd.push(facMo.reduce((s,x)=>s+parseFloat(x.monto||0),0));gd.push(fpm(DB.gastos,mo).reduce((s,x)=>s+parseFloat(x.monto||0),0));}
+  const mesActivo=$('dash-fmes')?.value||periodo;const anio=mesActivo.split('-')[0],labels=[],fd=[],gd=[],md=[],nd=[];
+  for(let i=1;i<=12;i++){
+    const mo=`${anio}-${String(i).padStart(2,'0')}`;
+    labels.push(['','ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][i]);
+    let facMo=fpms(DB.fac,mo);
+    if(fNicho)facMo=facMo.filter(x=>(getModByNom(x.modelo)?.nicho||x.nicho)===fNicho);
+    if(fMod)facMo=facMo.filter(x=>x.modelo===fMod);
+    const totalFac=facMo.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+    const gasMo=fpm(DB.gastos,mo);
+    const totalGas=gasMo.reduce((s,x)=>s+parseFloat(x.monto||0),0);
+    const gasOp=gasMo.filter(x=>x.categoria!=='SALARIO').reduce((s,x)=>s+parseFloat(x.monto||0),0);
+    // Pagos a modelos del mes
+    const modMap={};facMo.forEach(x=>{modMap[x.modelo]=(modMap[x.modelo]||0)+parseFloat(x.monto||0);});
+    const totalMod=Object.entries(modMap).reduce((s,[nom,f])=>{const res=calcModelo(getModByNom(nom),f);const gC=res.pagaGastos?gasOp*0.5:0;return s+res.pago+gC;},0);
+    fd.push(totalFac);
+    gd.push(totalGas);
+    md.push(parseFloat(totalMod.toFixed(2)));
+    nd.push(parseFloat((totalFac-totalGas-totalMod).toFixed(2)));
+  }
   dc('ch-anual');const lbl=fMod?`${fMod}`:fNicho?`${fNicho}`:'Ingresos';
-  charts['ch-anual']=new Chart($('ch-anual'),{type:'line',data:{labels,datasets:[{label:lbl,data:fd,borderColor:'#2E7D32',backgroundColor:'rgba(46,125,50,.07)',tension:.45,fill:true,pointBackgroundColor:'#2E7D32',pointRadius:0,pointHoverRadius:4,borderWidth:2},{label:'Gastos',data:gd,borderColor:'#C62828',backgroundColor:'rgba(198,40,40,.04)',tension:.45,fill:true,pointBackgroundColor:'#C62828',pointRadius:0,pointHoverRadius:4,borderWidth:1.5}]},options:chO()});
+  charts['ch-anual']=new Chart($('ch-anual'),{type:'line',data:{labels,datasets:[
+    {label:lbl,data:fd,borderColor:'#2E7D32',backgroundColor:'rgba(46,125,50,.07)',tension:.45,fill:true,pointRadius:0,pointHoverRadius:4,borderWidth:2},
+    {label:'Pagos modelos',data:md,borderColor:'#1565C0',backgroundColor:'transparent',tension:.45,fill:false,pointRadius:0,pointHoverRadius:4,borderWidth:1.5,borderDash:[4,3]},
+    {label:'Gastos op.',data:gd,borderColor:'#C62828',backgroundColor:'rgba(198,40,40,.04)',tension:.45,fill:true,pointRadius:0,pointHoverRadius:4,borderWidth:1.5},
+    {label:'Ganancia neta',data:nd,borderColor:'#E65100',backgroundColor:'transparent',tension:.45,fill:false,pointRadius:0,pointHoverRadius:4,borderWidth:2,borderDash:[6,2]}
+  ]},options:chO()});
 }
 function rChDist(mesActivo){
   const mes=mesActivo||$('dash-fmes')?.value||periodo;const isDark=document.documentElement.getAttribute('data-theme')==='dark';const textColor=isDark?'#64748b':'#9ca3af';
